@@ -1,0 +1,1761 @@
+================================================================================
+LoRA Platform Mobile Web App 개발 명세서 (CSS 위주)
+================================================================================
+
+프로젝트명: LoRA Platform Mobile Web (Blueming AI)
+목표: 기존 웹 앱을 모바일 웹뷰에 최적화 (반응형 CSS)
+기간: 3일 (2025-12-23 ~ 2025-12-26)
+전략: 모바일 우선 디자인 → 점진적 기능 추가
+
+================================================================================
+📋 목차
+================================================================================
+
+1. 프로젝트 개요
+2. 개발 환경 설정
+3. 프로젝트 생성 및 초기 설정
+4. 모바일 웹 최적화 전략
+5. CSS 아키텍처
+6. 반응형 디자인 가이드
+7. 화면별 구현 가이드
+8. 터치/제스처 최적화
+9. 성능 최적화
+10. PWA 설정 (선택)
+11. 테스트 방법
+12. 배포 준비
+13. 체크리스트
+
+================================================================================
+1. 프로젝트 개요
+================================================================================
+
+1-1. 프로젝트 목적
+-------------------
+기존 데스크톱 중심 웹 앱을 모바일 웹뷰에 최적화하여
+스마트폰에서 네이티브 앱처럼 자연스러운 UX 제공
+
+1-2. 기술 스택
+-------------------
+Frontend:
+  - Vue.js 3.5+ (기존 프로젝트 활용)
+  - TypeScript 5.9+
+  - Vite (빌드 도구)
+
+스타일링:
+  - CSS3 (Grid, Flexbox)
+  - CSS Variables (다크/라이트 모드)
+  - Mobile-First Media Queries
+  - CSS Modules 또는 Scoped Styles
+
+상태 관리:
+  - Pinia (기존)
+  - Composables
+
+백엔드:
+  - 기존 API 서버 사용
+  - http://blueming-ai-env.eba-gdfew9bx.ap-northeast-2.elasticbeanstalk.com/
+
+추가 라이브러리 (선택):
+  - Swiper (터치 슬라이더)
+  - Hammer.js (제스처)
+  - VueUse (유틸리티 훅)
+
+1-3. 개발 접근 방식
+-------------------
+
+Option 1: 기존 Vue 프로젝트 확장 (추천!)
+  - 기존 코드 재사용
+  - 모바일 전용 CSS 추가
+  - 반응형 컴포넌트로 개선
+
+Option 2: 새 프로젝트 생성 (모바일 전용)
+  - 모바일 우선 설계
+  - 필요한 기능만 구현
+  - 가벼운 번들 사이즈
+
+→ 이 가이드는 **Option 1 (기존 프로젝트 확장)** 기준
+
+1-4. MVP 범위
+-------------------
+Phase 1 (필수, 3일):
+  ✅ 모바일 반응형 레이아웃
+  ✅ 모델 리스트 (터치 스크롤)
+  ✅ 모델 상세 (스와이프 갤러리)
+  ✅ 로그인/프로필
+  ✅ 하단 네비게이션 바
+
+Phase 2 (추가):
+  ⏳ 검색, 필터
+  ⏳ 풀스크린 이미지 뷰어
+  ⏳ 댓글
+
+Phase 3 (고급):
+  ⏳ 오프라인 지원 (PWA)
+  ⏳ 푸시 알림
+  ⏳ 설치 프롬프트
+
+================================================================================
+2. 개발 환경 설정
+================================================================================
+
+2-1. 필수 소프트웨어
+-------------------
+
+기존 환경 확인:
+  ```bash
+  node -v          # v18+ 확인
+  npm -v           # 확인
+  git --version    # 확인
+  ```
+
+2-2. 브라우저 개발 도구
+-------------------
+
+Chrome DevTools (필수):
+  1. F12 → DevTools 열기
+  2. Toggle device toolbar (Ctrl+Shift+M)
+  3. Responsive 모드에서 테스트
+  4. 네트워크 → Slow 3G 선택 (성능 테스트)
+
+모바일 기기 에뮬레이터:
+  - iPhone 12 Pro (390x844)
+  - iPhone 14 Pro Max (430x932)
+  - Samsung Galaxy S20 (360x800)
+  - iPad (768x1024)
+
+2-3. 실기기 테스트 환경
+-------------------
+
+Android:
+  1. USB 디버깅 활성화
+  2. Chrome → chrome://inspect
+  3. 디바이스 연결 확인
+
+iOS (Mac 필요):
+  1. Safari → 개발자 메뉴 활성화
+  2. iPhone/iPad 연결
+  3. Safari → 개발자 → [기기명]
+
+로컬 네트워크 접속:
+  ```bash
+  # Vite 개발 서버 (기본적으로 네트워크 노출)
+  npm run dev -- --host
+
+  # 접속 URL (예시)
+  http://192.168.0.10:5173
+  ```
+
+2-4. VS Code 확장 (추천)
+-------------------
+
+필수:
+  - Vue - Official (Volar)
+  - CSS Peek
+  - Live Server (선택)
+
+유용:
+  - Mobile View (뷰포트 미리보기)
+  - CSS Flexbox Cheatsheet
+  - Autoprefixer
+
+================================================================================
+3. 프로젝트 생성 및 초기 설정
+================================================================================
+
+3-1. 기존 프로젝트 활용 (추천)
+-------------------
+
+현재 위치: C:\Users\ksh41\Desktop\VSCODE\LoRA-Platform-Front
+
+Step 1: Git 브랜치 생성 (안전하게 작업)
+  ```bash
+  git checkout -b mobile-optimization
+  ```
+
+Step 2: 모바일 전용 CSS 파일 생성
+  ```bash
+  # Windows PowerShell
+  New-Item -ItemType File -Path src/assets/mobile.css
+  ```
+
+Step 3: Viewport Meta 태그 확인
+  파일: index.html
+  ```html
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  ```
+
+Step 4: 추가 패키지 설치 (선택)
+  ```bash
+  npm install swiper              # 터치 슬라이더
+  npm install @vueuse/core        # 유틸리티 훅
+  npm install hammerjs            # 제스처 (선택)
+  ```
+
+3-2. 새 프로젝트 생성 (모바일 전용)
+-------------------
+
+Step 1: 프로젝트 생성
+  ```bash
+  cd C:\Users\ksh41\Desktop\VSCODE
+  npm create vite@latest lora-mobile-web -- --template vue-ts
+  cd lora-mobile-web
+  npm install
+  ```
+
+Step 2: 필수 패키지 설치
+  ```bash
+  npm install vue-router pinia
+  npm install axios
+  npm install swiper
+  npm install @vueuse/core
+  ```
+
+Step 3: 기존 코드 복사
+  - src/services/api.ts 복사
+  - src/stores/auth.ts 복사
+  - src/types/ 폴더 복사
+  - src/composables/ 폴더 복사
+
+================================================================================
+4. 모바일 웹 최적화 전략
+================================================================================
+
+4-1. 핵심 원칙
+-------------------
+
+✅ Mobile-First Approach
+  - 기본 스타일: 모바일 (360px)
+  - Media Query: 태블릿, 데스크톱 추가
+
+✅ Touch-Friendly
+  - 터치 타겟: 최소 44x44px
+  - 간격: 충분한 여백
+  - 제스처: 스와이프, 풀투리프레시
+
+✅ Performance
+  - 이미지: lazy loading, WebP
+  - CSS: Critical CSS 인라인
+  - JS: Code splitting
+
+✅ Accessibility
+  - 충분한 색상 대비
+  - 큰 폰트 (최소 16px)
+  - 시맨틱 HTML
+
+4-2. 뷰포트 설정
+-------------------
+
+파일: index.html
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+
+  <!-- 필수: 뷰포트 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+
+  <!-- PWA 관련 -->
+  <meta name="theme-color" content="#3B82F6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- 아이콘 -->
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+
+  <title>LoRA Platform</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+```
+
+4-3. Safe Area 대응 (iOS)
+-------------------
+
+iOS의 노치/다이나믹 아일랜드 대응:
+
+```css
+/* Safe Area 변수 */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
+  --safe-area-inset-right: env(safe-area-inset-right);
+}
+
+/* 네비게이션 바 */
+.navigation {
+  padding-top: var(--safe-area-inset-top);
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* 하단 탭 */
+.bottom-tabs {
+  padding-bottom: calc(var(--safe-area-inset-bottom) + 16px);
+}
+```
+
+================================================================================
+5. CSS 아키텍처
+================================================================================
+
+5-1. CSS Variables (모바일 최적화)
+-------------------
+
+파일: src/assets/mobile.css
+
+```css
+:root {
+  /* 색상 (기존과 동일) */
+  --color-primary: #3B82F6;
+  --color-secondary: #8B5CF6;
+  --color-accent: #EC4899;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+
+  --bg: #1A1A1D;
+  --bg-card: #28282B;
+  --bg-hover: #3A3A3D;
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #BDBDBD;
+  --text-muted: #828282;
+
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow: rgba(0, 0, 0, 0.3);
+
+  /* 모바일 전용 간격 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;        /* 모바일에서 축소 */
+  --space-lg: 16px;        /* 모바일에서 축소 */
+  --space-xl: 24px;        /* 모바일에서 축소 */
+  --space-2xl: 32px;
+
+  /* 터치 타겟 크기 */
+  --touch-target: 44px;    /* 최소 터치 영역 */
+  --button-height: 48px;   /* 버튼 높이 */
+
+  /* 폰트 크기 (모바일 최적화) */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-base: 16px;       /* 최소 기본 크기 */
+  --font-lg: 18px;
+  --font-xl: 20px;
+  --font-2xl: 24px;
+  --font-3xl: 28px;
+
+  /* 레이아웃 */
+  --header-height: 56px;   /* 모바일 헤더 */
+  --bottom-nav-height: 56px; /* 하단 탭 */
+  --container-padding: 16px;
+
+  /* 애니메이션 */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+
+  /* z-index */
+  --z-header: 100;
+  --z-modal: 1000;
+  --z-toast: 2000;
+
+  /* Safe Area (iOS) */
+  --safe-top: env(safe-area-inset-top, 0);
+  --safe-bottom: env(safe-area-inset-bottom, 0);
+  --safe-left: env(safe-area-inset-left, 0);
+  --safe-right: env(safe-area-inset-right, 0);
+}
+
+/* 라이트 모드 */
+[data-theme='light'] {
+  --bg: #FFFFFF;
+  --bg-card: #F5F5F5;
+  --bg-hover: #E5E5E5;
+
+  --text-primary: #000000;
+  --text-secondary: #4A4A4A;
+  --text-muted: #9E9E9E;
+
+  --border: rgba(0, 0, 0, 0.1);
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+```
+
+5-2. 기본 모바일 스타일
+-------------------
+
+```css
+/* 전역 리셋 */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* 터치 하이라이트 제거 */
+}
+
+html {
+  font-size: 16px; /* 최소 폰트 크기 */
+  -webkit-text-size-adjust: 100%; /* iOS 폰트 크기 자동 조정 방지 */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  overflow-x: hidden; /* 가로 스크롤 방지 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 스크롤 성능 최적화 */
+.scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+  overscroll-behavior-y: contain; /* 바운스 제한 */
+}
+
+/* 터치 영역 최소 크기 */
+button, a, .touchable {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 이미지 최적화 */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 입력 필드 (iOS 줌 방지) */
+input, textarea, select {
+  font-size: 16px; /* 16px 미만이면 iOS에서 자동 줌 */
+}
+```
+
+5-3. 레이아웃 컴포넌트
+-------------------
+
+```css
+/* 앱 컨테이너 */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh; /* 동적 뷰포트 높이 */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* 헤더 */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--header-height);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--container-padding);
+  backdrop-filter: blur(10px);
+  background: rgba(var(--bg-card-rgb), 0.8);
+}
+
+/* 메인 콘텐츠 */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+}
+
+/* 하단 네비게이션 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  z-index: var(--z-header);
+  padding-bottom: var(--safe-bottom);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-primary);
+}
+
+/* 컨테이너 */
+.container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 var(--container-padding);
+}
+
+/* 카드 */
+.card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+```
+
+================================================================================
+6. 반응형 디자인 가이드
+================================================================================
+
+6-1. 브레이크포인트 전략
+-------------------
+
+```css
+/* Mobile First - 기본 스타일은 모바일 */
+
+/* 모바일 (기본): 360px ~ 767px */
+/* 기본 스타일 - 별도 미디어 쿼리 불필요 */
+
+/* 태블릿: 768px ~ 1023px */
+@media (min-width: 768px) {
+  :root {
+    --container-padding: 24px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* 하단 네비게이션 숨기기, 사이드바 표시 */
+  .bottom-nav {
+    display: none;
+  }
+
+  .sidebar {
+    display: block;
+  }
+}
+
+/* 데스크톱: 1024px 이상 */
+@media (min-width: 1024px) {
+  :root {
+    --container-padding: 32px;
+    --space-lg: 32px;
+    --space-xl: 48px;
+  }
+
+  .container {
+    max-width: 1200px;
+  }
+}
+
+/* 큰 화면: 1440px 이상 */
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1320px;
+  }
+}
+```
+
+6-2. 터치 최적화
+-------------------
+
+```css
+/* 터치 타겟 크기 */
+.btn {
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: var(--font-base);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  /* 터치 피드백 */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* 스와이프 가능한 영역 표시 */
+.swipeable {
+  cursor: grab;
+  user-select: none;
+}
+
+.swipeable:active {
+  cursor: grabbing;
+}
+
+/* 리스트 아이템 */
+.list-item {
+  min-height: 64px;
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+}
+
+.list-item:active {
+  background: var(--bg-hover);
+}
+```
+
+6-3. 그리드 시스템
+-------------------
+
+```css
+/* 모바일: 1열 */
+.grid {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: 1fr;
+}
+
+/* 작은 모바일: 2열 (가로 모드) */
+@media (min-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 태블릿: 3열 */
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 데스크톱: 4열 */
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* 유틸리티 클래스 */
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-auto { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+```
+
+================================================================================
+7. 화면별 구현 가이드
+================================================================================
+
+7-1. 모델 리스트 (홈 화면)
+-------------------
+
+파일: src/views/ModelList.vue
+
+```vue
+<template>
+  <div class="model-list-page">
+    <!-- 헤더 -->
+    <header class="header">
+      <h1 class="header-title">LoRA Models</h1>
+      <button class="icon-btn" @click="openSearch">
+        <SearchIcon />
+      </button>
+    </header>
+
+    <!-- 탭 -->
+    <div class="tabs">
+      <button
+        class="tab"
+        :class="{ active: activeTab === 'popular' }"
+        @click="activeTab = 'popular'"
+      >
+        Popular
+      </button>
+      <button
+        class="tab"
+        :class="{ active: activeTab === 'recent' }"
+        @click="activeTab = 'recent'"
+      >
+        Recent
+      </button>
+    </div>
+
+    <!-- 모델 그리드 -->
+    <div class="main-content">
+      <div class="model-grid">
+        <ModelCard
+          v-for="model in models"
+          :key="model.id"
+          :model="model"
+          @click="openDetail(model.id)"
+        />
+      </div>
+
+      <!-- 로딩 -->
+      <div v-if="loading" class="loading">
+        <LoadingSpinner />
+      </div>
+
+      <!-- 무한 스크롤 트리거 -->
+      <div ref="loadMoreTrigger" class="load-more-trigger"></div>
+    </div>
+
+    <!-- 하단 네비게이션 -->
+    <nav class="bottom-nav">
+      <a href="/" class="bottom-nav-item active">
+        <HomeIcon />
+        <span>Home</span>
+      </a>
+      <a href="/search" class="bottom-nav-item">
+        <SearchIcon />
+        <span>Search</span>
+      </a>
+      <a href="/profile" class="bottom-nav-item">
+        <UserIcon />
+        <span>Profile</span>
+      </a>
+    </nav>
+  </div>
+</template>
+
+<style scoped>
+.model-list-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--container-padding);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: var(--header-height);
+  z-index: 90;
+}
+
+.tab {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-base);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.tab.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* 모델 그리드 */
+.model-grid {
+  padding: var(--space-lg) var(--container-padding);
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: 1fr;
+}
+
+/* 2열 (작은 모바일 가로) */
+@media (min-width: 480px) {
+  .model-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 3열 (태블릿) */
+@media (min-width: 768px) {
+  .model-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 무한 스크롤 트리거 */
+.load-more-trigger {
+  height: 1px;
+  margin-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+}
+</style>
+```
+
+7-2. 모델 카드 컴포넌트
+-------------------
+
+파일: src/components/models/ModelCard.vue
+
+```vue
+<template>
+  <div class="model-card" @click="$emit('click')">
+    <!-- 썸네일 -->
+    <div class="card-image">
+      <img
+        :src="model.thumbnailUrl || '/placeholder.png'"
+        :alt="model.title"
+        loading="lazy"
+      />
+      <!-- 좋아요 표시 -->
+      <div v-if="model.isLiked" class="liked-badge">
+        <HeartIcon filled />
+      </div>
+    </div>
+
+    <!-- 정보 -->
+    <div class="card-content">
+      <h3 class="card-title">{{ model.title }}</h3>
+      <p class="card-author">{{ model.userNickname }}</p>
+
+      <!-- 통계 -->
+      <div class="card-stats">
+        <span class="stat">
+          <HeartIcon />
+          {{ formatNumber(model.likeCount) }}
+        </span>
+        <span class="stat">
+          <EyeIcon />
+          {{ formatNumber(model.viewCount) }}
+        </span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.model-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+
+  /* 터치 피드백 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.model-card:active {
+  transform: scale(0.98);
+}
+
+/* 썸네일 */
+.card-image {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--bg-hover);
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.model-card:active .card-image img {
+  transform: scale(1.05);
+}
+
+/* 좋아요 뱃지 */
+.liked-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-error);
+}
+
+/* 콘텐츠 */
+.card-content {
+  padding: var(--space-md);
+}
+
+.card-title {
+  font-size: var(--font-base);
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-author {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+
+/* 통계 */
+.card-stats {
+  display: flex;
+  gap: var(--space-md);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+</style>
+```
+
+7-3. 모델 상세 화면
+-------------------
+
+파일: src/views/ModelDetail.vue
+
+```vue
+<template>
+  <div class="model-detail-page">
+    <!-- 풀스크린 헤더 -->
+    <header class="detail-header">
+      <button class="icon-btn" @click="goBack">
+        <BackIcon />
+      </button>
+      <button class="icon-btn" @click="shareModel">
+        <ShareIcon />
+      </button>
+    </header>
+
+    <!-- 이미지 갤러리 (스와이프) -->
+    <div class="image-gallery">
+      <swiper
+        :slides-per-view="1"
+        :space-between="0"
+        :pagination="{ clickable: true }"
+        class="swiper"
+      >
+        <swiper-slide v-for="(sample, index) in model.samples" :key="index">
+          <img
+            :src="sample.imageUrl"
+            :alt="`Sample ${index + 1}`"
+            @click="openFullscreen(index)"
+          />
+        </swiper-slide>
+      </swiper>
+    </div>
+
+    <!-- 정보 -->
+    <div class="detail-content">
+      <!-- 제목 & 좋아요 -->
+      <div class="detail-header-section">
+        <div>
+          <h1 class="detail-title">{{ model.title }}</h1>
+          <p class="detail-author">by {{ model.userNickname }}</p>
+        </div>
+        <button
+          class="like-btn"
+          :class="{ liked: model.isLiked }"
+          @click="toggleLike"
+        >
+          <HeartIcon :filled="model.isLiked" />
+          <span>{{ formatNumber(model.likeCount) }}</span>
+        </button>
+      </div>
+
+      <!-- 설명 -->
+      <div class="detail-section">
+        <p class="description">{{ model.description }}</p>
+      </div>
+
+      <!-- 프롬프트 -->
+      <div class="detail-section">
+        <h2 class="section-title">Prompts</h2>
+        <div class="prompts">
+          <div
+            v-for="prompt in model.prompts"
+            :key="prompt.id"
+            class="prompt-card"
+          >
+            <p class="prompt-text">{{ prompt.promptText }}</p>
+            <button class="copy-btn" @click="copyPrompt(prompt.promptText)">
+              <CopyIcon />
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 태그 -->
+      <div class="detail-section">
+        <div class="tags">
+          <span v-for="tag in model.tags" :key="tag.id" class="tag">
+            {{ tag.name }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 플로팅 액션 버튼 (생성하기) -->
+    <button class="fab" @click="openGenerate">
+      Generate
+    </button>
+  </div>
+</template>
+
+<style scoped>
+.model-detail-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-bottom: calc(80px + var(--safe-bottom)); /* FAB 공간 */
+}
+
+/* 헤더 (이미지 위에 투명하게) */
+.detail-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-header);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-md) var(--container-padding);
+  padding-top: calc(var(--space-md) + var(--safe-top));
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+}
+
+/* 이미지 갤러리 */
+.image-gallery {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-card);
+}
+
+.image-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 콘텐츠 */
+.detail-content {
+  padding: var(--space-lg) var(--container-padding);
+}
+
+.detail-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-lg);
+}
+
+.detail-title {
+  font-size: var(--font-2xl);
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.detail-author {
+  font-size: var(--font-base);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* 좋아요 버튼 */
+.like-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-sm);
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  min-width: 60px;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.like-btn.liked {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.like-btn:active {
+  transform: scale(0.95);
+}
+
+/* 섹션 */
+.detail-section {
+  margin-bottom: var(--space-xl);
+}
+
+.section-title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  margin: 0 0 var(--space-md) 0;
+}
+
+/* 프롬프트 카드 */
+.prompts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.prompt-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.prompt-text {
+  flex: 1;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 태그 */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.tag {
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: calc(var(--space-lg) + var(--safe-bottom));
+  right: var(--container-padding);
+  width: 120px;
+  height: 56px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 28px;
+  font-size: var(--font-lg);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  z-index: 90;
+  transition: all var(--transition-fast);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+</style>
+```
+
+================================================================================
+8. 터치/제스처 최적화
+================================================================================
+
+8-1. 스와이프 슬라이더 (Swiper.js)
+-------------------
+
+설치:
+```bash
+npm install swiper
+```
+
+사용 예시:
+
+```vue
+<script setup lang="ts">
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Pagination, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+
+const modules = [Pagination, Navigation];
+</script>
+
+<template>
+  <swiper
+    :modules="modules"
+    :slides-per-view="1"
+    :space-between="0"
+    :pagination="{ clickable: true }"
+    :navigation="false"
+    class="image-swiper"
+  >
+    <swiper-slide v-for="image in images" :key="image.id">
+      <img :src="image.url" :alt="image.alt" />
+    </swiper-slide>
+  </swiper>
+</template>
+
+<style>
+.image-swiper {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+/* 페이지네이션 커스텀 */
+.swiper-pagination-bullet {
+  background: white;
+  opacity: 0.5;
+  width: 8px;
+  height: 8px;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+  background: var(--color-primary);
+}
+</style>
+```
+
+8-2. Pull to Refresh
+-------------------
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const isPulling = ref(false);
+const pullDistance = ref(0);
+const startY = ref(0);
+
+const handleTouchStart = (e: TouchEvent) => {
+  startY.value = e.touches[0].clientY;
+};
+
+const handleTouchMove = (e: TouchEvent) => {
+  const currentY = e.touches[0].clientY;
+  const distance = currentY - startY.value;
+
+  if (distance > 0 && window.scrollY === 0) {
+    pullDistance.value = Math.min(distance * 0.5, 80);
+  }
+};
+
+const handleTouchEnd = async () => {
+  if (pullDistance.value > 60) {
+    isPulling.value = true;
+    await refreshData();
+    isPulling.value = false;
+  }
+  pullDistance.value = 0;
+};
+
+const refreshData = async () => {
+  // 데이터 새로고침
+  await loadModels();
+};
+</script>
+
+<template>
+  <div
+    class="refresh-container"
+    @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
+    @touchend="handleTouchEnd"
+  >
+    <!-- Pull to refresh 인디케이터 -->
+    <div
+      class="refresh-indicator"
+      :style="{ transform: `translateY(${pullDistance}px)` }"
+    >
+      <div class="spinner" v-if="isPulling">↻</div>
+      <div v-else>Pull to refresh</div>
+    </div>
+
+    <!-- 콘텐츠 -->
+    <slot />
+  </div>
+</template>
+
+<style scoped>
+.refresh-container {
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.refresh-indicator {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
+```
+
+8-3. 무한 스크롤 (Intersection Observer)
+-------------------
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+const loading = ref(false);
+const hasMore = ref(true);
+
+let observer: IntersectionObserver | null = null;
+
+const loadMore = async () => {
+  if (loading.value || !hasMore.value) return;
+
+  loading.value = true;
+  try {
+    const newData = await fetchNextPage();
+    if (newData.length === 0) {
+      hasMore.value = false;
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  if (loadMoreTrigger.value) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(loadMoreTrigger.value);
+  }
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+});
+</script>
+
+<template>
+  <div>
+    <!-- 리스트 -->
+    <div v-for="item in items" :key="item.id">
+      {{ item.name }}
+    </div>
+
+    <!-- 트리거 -->
+    <div ref="loadMoreTrigger" class="load-more-trigger">
+      <div v-if="loading" class="loading">Loading...</div>
+    </div>
+  </div>
+</template>
+```
+
+================================================================================
+9. 성능 최적화
+================================================================================
+
+9-1. 이미지 최적화
+-------------------
+
+```vue
+<template>
+  <!-- 지연 로딩 -->
+  <img
+    :src="imageUrl"
+    loading="lazy"
+    decoding="async"
+  />
+
+  <!-- srcset으로 반응형 이미지 -->
+  <img
+    :src="imageUrl"
+    :srcset="`
+      ${imageUrl}?w=400 400w,
+      ${imageUrl}?w=800 800w,
+      ${imageUrl}?w=1200 1200w
+    `"
+    sizes="(max-width: 768px) 100vw, 50vw"
+    loading="lazy"
+  />
+
+  <!-- WebP 지원 -->
+  <picture>
+    <source :srcset="`${imageUrl}.webp`" type="image/webp">
+    <source :srcset="`${imageUrl}.jpg`" type="image/jpeg">
+    <img :src="`${imageUrl}.jpg`" loading="lazy">
+  </picture>
+</template>
+```
+
+9-2. CSS 최적화
+-------------------
+
+```css
+/* GPU 가속 */
+.animated-element {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* 스크롤 성능 */
+.scroll-container {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* 폰트 로딩 최적화 */
+@font-face {
+  font-family: 'CustomFont';
+  src: url('/fonts/custom.woff2') format('woff2');
+  font-display: swap; /* FOIT 방지 */
+}
+```
+
+9-3. JavaScript 최적화
+-------------------
+
+```typescript
+// Debounce (검색 입력)
+import { ref } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
+
+const searchQuery = ref('');
+const search = useDebounceFn(() => {
+  // API 호출
+  searchModels(searchQuery.value);
+}, 300);
+
+// Throttle (스크롤 이벤트)
+import { useThrottleFn } from '@vueuse/core';
+
+const handleScroll = useThrottleFn(() => {
+  // 스크롤 처리
+}, 100);
+
+// Virtual Scrolling (긴 리스트)
+// vue-virtual-scroller 사용 권장
+```
+
+================================================================================
+10. PWA 설정 (선택)
+================================================================================
+
+10-1. Manifest 파일
+-------------------
+
+파일: public/manifest.json
+
+```json
+{
+  "name": "LoRA Platform",
+  "short_name": "LoRA",
+  "description": "AI Image Generation with LoRA Models",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A1A1D",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+```
+
+10-2. Service Worker (Vite PWA Plugin)
+-------------------
+
+설치:
+```bash
+npm install vite-plugin-pwa -D
+```
+
+vite.config.ts:
+```typescript
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'LoRA Platform',
+        short_name: 'LoRA',
+        theme_color: '#3B82F6',
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|webp|svg)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              },
+            },
+          },
+        ],
+      },
+    }),
+  ],
+});
+```
+
+================================================================================
+11. 테스트 방법
+================================================================================
+
+11-1. 브라우저 DevTools
+-------------------
+
+Chrome DevTools:
+1. F12 → Toggle device toolbar (Ctrl+Shift+M)
+2. 디바이스 선택 (iPhone 14 Pro, Galaxy S20 등)
+3. 터치 시뮬레이션 활성화
+4. Network → Slow 3G로 성능 테스트
+
+Lighthouse 감사:
+1. F12 → Lighthouse 탭
+2. Mobile 선택
+3. Performance, Accessibility, Best Practices, SEO 체크
+4. Generate report
+
+11-2. 실기기 테스트
+-------------------
+
+로컬 네트워크 접속:
+```bash
+# Vite 개발 서버 (네트워크 노출)
+npm run dev -- --host
+
+# 출력된 네트워크 주소로 접속
+# 예: http://192.168.0.10:5173
+```
+
+Android Chrome Remote Debugging:
+1. chrome://inspect
+2. USB 연결된 디바이스 확인
+3. Inspect 클릭
+
+iOS Safari Web Inspector (Mac 필요):
+1. Safari → 환경설정 → 고급 → 개발자 메뉴 활성화
+2. 개발자 → [iPhone 이름] → [페이지]
+
+11-3. 성능 측정
+-------------------
+
+Core Web Vitals:
+- LCP (Largest Contentful Paint): < 2.5s
+- FID (First Input Delay): < 100ms
+- CLS (Cumulative Layout Shift): < 0.1
+
+측정 도구:
+- Lighthouse
+- WebPageTest.org
+- Chrome User Experience Report
+
+================================================================================
+12. 배포 준비
+================================================================================
+
+12-1. 빌드 최적화
+-------------------
+
+vite.config.ts:
+```typescript
+export default defineConfig({
+  build: {
+    target: 'es2015',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', 'vue-router', 'pinia'],
+          'ui': ['swiper'],
+        },
+      },
+    },
+  },
+});
+```
+
+빌드:
+```bash
+npm run build
+```
+
+미리보기:
+```bash
+npm run preview
+```
+
+12-2. JCloud 배포 (과제 요구사항)
+-------------------
+
+JCloud 배포 방법은 학교 자료 참고
+
+일반적인 정적 호스팅 배포:
+```bash
+# dist 폴더를 서버에 업로드
+# SPA 라우팅을 위한 redirect 설정 필요
+```
+
+12-3. 환경 변수 설정
+-------------------
+
+.env.production:
+```
+VITE_API_BASE_URL=https://production-api.com
+VITE_FRONTEND_URL=https://your-domain.com
+```
+
+================================================================================
+13. 체크리스트
+================================================================================
+
+환경 설정:
+  [ ] Node.js v18+ 설치
+  [ ] Vite 프로젝트 생성 또는 기존 프로젝트 활용
+  [ ] 필수 패키지 설치 (Swiper, VueUse 등)
+  [ ] VS Code + 확장 설치
+
+모바일 최적화:
+  [ ] Viewport meta 태그 설정
+  [ ] Mobile-First CSS 작성
+  [ ] 터치 타겟 44px 이상
+  [ ] Safe Area 대응 (iOS)
+  [ ] 반응형 그리드 시스템
+
+주요 기능:
+  [ ] 모델 리스트 (무한 스크롤)
+  [ ] 모델 상세 (스와이프 갤러리)
+  [ ] 로그인/프로필
+  [ ] 하단 네비게이션
+  [ ] Pull to Refresh
+
+성능 최적화:
+  [ ] 이미지 lazy loading
+  [ ] CSS GPU 가속
+  [ ] Code splitting
+  [ ] Lighthouse 점수 80+ (Mobile)
+
+테스트:
+  [ ] Chrome DevTools (다양한 기기)
+  [ ] 실기기 테스트 (Android/iOS)
+  [ ] 터치 제스처 확인
+  [ ] 네트워크 slow 3G 테스트
+
+배포:
+  [ ] Production 빌드
+  [ ] 환경 변수 설정
+  [ ] JCloud 배포
+  [ ] 실기기에서 배포 버전 테스트
+
+문서화:
+  [ ] README.md 작성
+  [ ] 시연 영상 준비
+  [ ] 실행 가이드 작성
+
+================================================================================
+부록: 유용한 리소스
+================================================================================
+
+CSS 프레임워크 (선택):
+- Tailwind CSS (유틸리티 우선)
+- UnoCSS (빠른 Tailwind 대안)
+- Vuetify (Material Design)
+
+모바일 UI 참고:
+- Material Design (Google)
+- Human Interface Guidelines (Apple)
+- Dribbble (디자인 영감)
+
+성능 최적화:
+- web.dev (Google)
+- MDN Performance
+- WebPageTest
+
+================================================================================

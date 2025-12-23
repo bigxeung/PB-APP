@@ -1,0 +1,1118 @@
+================================================================================
+LoRA Platform Mobile App 개발 명세서
+================================================================================
+
+프로젝트명: LoRA Platform Mobile (Blueming AI)
+목표: 기존 웹 앱을 모바일 네이티브 앱으로 포팅
+기간: 3일 (2025-12-23 ~ 2025-12-26)
+전략: MVP 우선 완성 → 점진적 기능 추가
+
+================================================================================
+📋 목차
+================================================================================
+
+1. 프로젝트 개요
+2. 개발 환경 설정
+3. 프로젝트 생성 및 초기 설정
+4. 프로젝트 구조
+5. 개발 프로세스 (단계별)
+6. API 연동 가이드
+7. 주요 기능 구현 가이드
+8. 테스트 방법
+9. 배포 준비
+10. 트러블슈팅
+11. 체크리스트
+
+================================================================================
+1. 프로젝트 개요
+================================================================================
+
+1-1. 프로젝트 목적
+-------------------
+기존 Vue.js 웹 앱(LoRA Platform)을 React Native 모바일 앱으로 개발하여
+사용자가 모바일에서도 LoRA 모델을 탐색하고 관리할 수 있도록 함.
+
+1-2. 기술 스택
+-------------------
+Frontend:
+  - React Native 0.73+ (JavaScript/TypeScript)
+  - Expo SDK 50+ (개발 도구)
+  - React Navigation 6+ (네비게이션)
+
+상태 관리:
+  - Context API (인증 상태)
+  - React Hooks (로컬 상태)
+
+HTTP 클라이언트:
+  - axios (API 호출)
+
+스토리지:
+  - AsyncStorage (토큰 저장)
+
+백엔드:
+  - 기존 API 서버 사용
+  - http://blueming-ai-env.eba-gdfew9bx.ap-northeast-2.elasticbeanstalk.com/
+
+1-3. MVP 범위
+-------------------
+Phase 1 (필수, 3일):
+  ✅ 로그인/로그아웃
+  ✅ 모델 리스트 (Popular/Recent)
+  ✅ 모델 상세 (정보, 샘플, 프롬프트)
+  ✅ 프로필 (내 모델)
+  ✅ 좋아요 기능
+
+Phase 2 (추가):
+  ⏳ 검색, 필터
+  ⏳ 댓글
+  ⏳ 즐겨찾기 탭
+
+Phase 3 (고급):
+  ⏳ 학습 기능
+  ⏳ 이미지 생성
+  ⏳ 실시간 진행률
+
+================================================================================
+2. 개발 환경 설정
+================================================================================
+
+2-1. 필수 소프트웨어 설치
+-------------------
+
+Step 1: Node.js 설치
+  - 버전: v18 이상 (LTS 권장)
+  - 다운로드: https://nodejs.org/
+  - 설치 확인:
+    ```bash
+    node -v
+    npm -v
+    ```
+
+Step 2: Git 설치
+  - 다운로드: https://git-scm.com/
+  - 설치 확인:
+    ```bash
+    git --version
+    ```
+
+Step 3: Expo CLI 설치
+  - 전역 설치:
+    ```bash
+    npm install -g expo-cli
+    ```
+  - 또는 npx 사용 (설치 불필요):
+    ```bash
+    npx expo --version
+    ```
+
+Step 4: 개발 도구 설치 (선택 - 에뮬레이터용)
+
+  [Android 개발 - Windows/Mac/Linux]
+  - Android Studio 설치
+    다운로드: https://developer.android.com/studio
+  - Android SDK 설치 (Android Studio에서 자동)
+  - AVD(Android Virtual Device) 생성
+    Tools → AVD Manager → Create Virtual Device
+
+  [iOS 개발 - Mac만 가능]
+  - Xcode 설치 (App Store)
+  - Xcode Command Line Tools:
+    ```bash
+    xcode-select --install
+    ```
+  - iOS Simulator 실행:
+    ```bash
+    open -a Simulator
+    ```
+
+Step 5: 실기기 테스트 앱 설치
+  - [Android] Play Store에서 "Expo Go" 설치
+  - [iOS] App Store에서 "Expo Go" 설치
+
+2-2. 에디터 설정
+-------------------
+추천: Visual Studio Code
+
+필수 확장:
+  - ES7+ React/Redux/React-Native snippets
+  - React Native Tools
+  - Prettier - Code formatter
+  - ESLint
+
+선택 확장:
+  - GitHub Copilot (AI 코드 도우미)
+  - GitLens (Git 히스토리)
+
+2-3. Expo 계정 생성
+-------------------
+1. https://expo.dev 접속
+2. Sign Up (무료)
+3. 계정 확인 이메일 클릭
+4. CLI에서 로그인:
+   ```bash
+   npx expo login
+   ```
+
+================================================================================
+3. 프로젝트 생성 및 초기 설정
+================================================================================
+
+3-1. 프로젝트 생성
+-------------------
+
+Step 1: 프로젝트 디렉토리로 이동
+  ```bash
+  cd C:\Users\ksh41\Desktop\VSCODE
+  ```
+
+Step 2: Expo 프로젝트 생성
+  ```bash
+  npx create-expo-app lora-mobile
+  ```
+  - Template 선택: blank (TypeScript)
+
+Step 3: 프로젝트 이동
+  ```bash
+  cd lora-mobile
+  ```
+
+Step 4: 초기 실행 확인
+  ```bash
+  npm start
+  ```
+  - QR 코드가 나오면 성공!
+  - 'a' 누르면 Android 에뮬레이터 실행
+  - 'i' 누르면 iOS 시뮬레이터 실행 (Mac만)
+  - QR 코드 스캔하면 실기기에서 실행
+
+3-2. 필수 패키지 설치
+-------------------
+
+Step 1: 네비게이션 라이브러리
+  ```bash
+  npm install @react-navigation/native @react-navigation/bottom-tabs @react-navigation/native-stack
+  npm install react-native-screens react-native-safe-area-context
+  ```
+
+Step 2: HTTP 클라이언트
+  ```bash
+  npm install axios
+  ```
+
+Step 3: 스토리지
+  ```bash
+  npm install @react-native-async-storage/async-storage
+  ```
+
+Step 4: 추가 UI 라이브러리 (선택)
+  ```bash
+  npm install react-native-paper
+  npm install react-native-vector-icons
+  ```
+
+Step 5: 환경 변수 관리
+  ```bash
+  npm install react-native-dotenv
+  npm install --save-dev @types/react-native-dotenv
+  ```
+
+Step 6: 이미지 관련 (모델 상세에서 사용)
+  ```bash
+  npx expo install expo-image
+  ```
+
+Step 7: OAuth 관련 (Google 로그인용)
+  ```bash
+  npx expo install expo-auth-session expo-web-browser
+  ```
+
+3-3. 환경 변수 설정
+-------------------
+
+파일 생성: .env
+  ```
+  API_BASE_URL=http://blueming-ai-env.eba-gdfew9bx.ap-northeast-2.elasticbeanstalk.com
+  FRONTEND_URL=http://blueming-front.s3-website.ap-northeast-2.amazonaws.com
+  ```
+
+파일 추가: .env.example (Git용)
+  ```
+  API_BASE_URL=
+  FRONTEND_URL=
+  ```
+
+.gitignore에 추가:
+  ```
+  .env
+  ```
+
+3-4. TypeScript 설정 (선택)
+-------------------
+
+tsconfig.json 수정:
+  ```json
+  {
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+      "strict": true,
+      "baseUrl": "./",
+      "paths": {
+        "@/*": ["src/*"]
+      }
+    }
+  }
+  ```
+
+3-5. Git 초기화
+-------------------
+
+Step 1: Git 초기화 (Expo가 자동으로 해줌)
+  ```bash
+  git status
+  ```
+
+Step 2: 초기 커밋
+  ```bash
+  git add .
+  git commit -m "Initial commit: Expo project setup"
+  ```
+
+Step 3: GitHub 저장소 생성 및 연결
+  ```bash
+  # GitHub에서 새 저장소 생성 후
+  git remote add origin https://github.com/yourusername/lora-mobile.git
+  git branch -M main
+  git push -u origin main
+  ```
+
+================================================================================
+4. 프로젝트 구조
+================================================================================
+
+4-1. 폴더 구조 생성
+-------------------
+
+프로젝트 루트에서 실행:
+  ```bash
+  mkdir -p src/screens src/components src/navigation src/services src/context src/utils src/types src/constants src/hooks
+  ```
+
+Windows (PowerShell):
+  ```powershell
+  New-Item -ItemType Directory -Path src/screens, src/components, src/navigation, src/services, src/context, src/utils, src/types, src/constants, src/hooks -Force
+  ```
+
+4-2. 최종 폴더 구조
+-------------------
+
+lora-mobile/
+├── src/
+│   ├── screens/                  # 화면 컴포넌트
+│   │   ├── auth/
+│   │   │   └── LoginScreen.tsx
+│   │   ├── models/
+│   │   │   ├── ModelListScreen.tsx
+│   │   │   └── ModelDetailScreen.tsx
+│   │   └── profile/
+│   │       └── ProfileScreen.tsx
+│   │
+│   ├── components/               # 재사용 컴포넌트
+│   │   ├── common/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── ErrorMessage.tsx
+│   │   ├── models/
+│   │   │   ├── ModelCard.tsx
+│   │   │   ├── ImageCarousel.tsx
+│   │   │   └── PromptCard.tsx
+│   │   └── layout/
+│   │       └── Header.tsx
+│   │
+│   ├── navigation/               # 네비게이션 설정
+│   │   ├── AppNavigator.tsx      # 메인 네비게이터
+│   │   └── types.ts              # 네비게이션 타입
+│   │
+│   ├── services/                 # API 서비스
+│   │   ├── api.ts                # API 클라이언트
+│   │   ├── auth.ts               # 인증 API
+│   │   ├── models.ts             # 모델 API
+│   │   └── user.ts               # 유저 API
+│   │
+│   ├── context/                  # React Context
+│   │   └── AuthContext.tsx       # 인증 상태 관리
+│   │
+│   ├── hooks/                    # 커스텀 훅
+│   │   ├── useAuth.ts
+│   │   └── useModels.ts
+│   │
+│   ├── utils/                    # 유틸리티 함수
+│   │   ├── storage.ts            # AsyncStorage 래퍼
+│   │   └── helpers.ts            # 헬퍼 함수
+│   │
+│   ├── types/                    # TypeScript 타입
+│   │   ├── index.ts              # 공통 타입
+│   │   ├── model.ts              # 모델 타입
+│   │   └── user.ts               # 유저 타입
+│   │
+│   └── constants/                # 상수
+│       ├── colors.ts             # 색상 팔레트
+│       └── config.ts             # 앱 설정
+│
+├── assets/                       # 이미지, 폰트 등
+│   ├── images/
+│   └── fonts/
+│
+├── App.tsx                       # 앱 진입점
+├── app.json                      # Expo 설정
+├── package.json                  # 의존성
+├── tsconfig.json                 # TypeScript 설정
+├── .env                          # 환경 변수
+├── .gitignore                    # Git 제외 파일
+└── README.md                     # 프로젝트 문서
+
+================================================================================
+5. 개발 프로세스 (단계별)
+================================================================================
+
+5-1. Phase 0: 기본 설정 (Day 1 오전, 2-3시간)
+-------------------
+
+Step 1: 상수 및 타입 정의
+  파일: src/constants/colors.ts
+  파일: src/types/index.ts
+  파일: src/types/model.ts
+
+Step 2: 유틸리티 함수 작성
+  파일: src/utils/storage.ts (토큰 저장/로드)
+  파일: src/utils/helpers.ts (날짜 포맷 등)
+
+Step 3: API 클라이언트 설정
+  파일: src/services/api.ts (axios 설정, 인터셉터)
+
+Step 4: 네비게이션 구조 설정
+  파일: src/navigation/AppNavigator.tsx
+
+5-2. Phase 1: 인증 (Day 1 오전~오후, 4-5시간)
+-------------------
+
+Step 1: AuthContext 생성
+  파일: src/context/AuthContext.tsx
+  - 로그인 상태 관리
+  - 토큰 저장/로드
+  - 로그아웃 함수
+
+Step 2: 인증 API 서비스
+  파일: src/services/auth.ts
+  - googleLogin()
+  - logout()
+  - getCurrentUser()
+
+Step 3: 로그인 화면
+  파일: src/screens/auth/LoginScreen.tsx
+  - Google 로그인 버튼
+  - 로딩 상태 표시
+
+Step 4: 토큰 관리
+  - AsyncStorage에 저장
+  - 자동 로그인 (App.tsx)
+  - API 요청 시 자동 헤더 추가
+
+5-3. Phase 2: 모델 리스트 (Day 1 오후~저녁, 4-5시간)
+-------------------
+
+Step 1: 모델 API 서비스
+  파일: src/services/models.ts
+  - getPopularModels(page, size)
+  - getPublicModels(page, size)
+
+Step 2: 모델 카드 컴포넌트
+  파일: src/components/models/ModelCard.tsx
+  - 썸네일, 제목, 좋아요 수 표시
+  - 클릭 이벤트
+
+Step 3: 모델 리스트 화면
+  파일: src/screens/models/ModelListScreen.tsx
+  - FlatList로 모델 표시
+  - 탭 (Popular/Recent)
+  - 무한 스크롤 (onEndReached)
+  - Pull to Refresh
+
+Step 4: 네비게이션 연결
+  - 하단 탭에 홈 추가
+  - 모델 클릭 시 상세로 이동
+
+5-4. Phase 3: 모델 상세 (Day 2 오전~오후, 5-6시간)
+-------------------
+
+Step 1: 모델 상세 API
+  파일: src/services/models.ts
+  - getModelDetail(modelId)
+  - toggleLike(modelId)
+
+Step 2: 이미지 캐러셀 컴포넌트
+  파일: src/components/models/ImageCarousel.tsx
+  - ScrollView 또는 FlatList horizontal
+  - 페이지네이션 인디케이터
+
+Step 3: 프롬프트 카드 컴포넌트
+  파일: src/components/models/PromptCard.tsx
+  - 프롬프트 표시
+  - 복사 버튼 (Clipboard API)
+
+Step 4: 모델 상세 화면
+  파일: src/screens/models/ModelDetailScreen.tsx
+  - 모델 정보 (제목, 설명, 작성자)
+  - 이미지 샘플 캐러셀
+  - 좋아요 버튼
+  - 프롬프트 리스트
+  - ScrollView로 스크롤 가능
+
+5-5. Phase 4: 프로필 (Day 2 오후~저녁, 3-4시간)
+-------------------
+
+Step 1: 유저 API 서비스
+  파일: src/services/user.ts
+  - getMyProfile()
+  - getMyModels(page, size)
+
+Step 2: 프로필 화면
+  파일: src/screens/profile/ProfileScreen.tsx
+  - 유저 정보 (닉네임, 이메일)
+  - 내 모델 리스트 (FlatList)
+  - 로그아웃 버튼
+
+Step 3: 네비게이션 연결
+  - 하단 탭에 프로필 추가
+
+5-6. Phase 5: 최적화 & 버그 수정 (Day 3, 6-8시간)
+-------------------
+
+Step 1: 공통 컴포넌트 정리
+  - Loading.tsx (ActivityIndicator)
+  - ErrorMessage.tsx (에러 표시)
+  - Button.tsx (재사용 버튼)
+
+Step 2: 에러 처리
+  - API 호출 실패 시 에러 메시지
+  - 네트워크 에러 처리
+  - 빈 데이터 처리
+
+Step 3: 스타일링 일관성
+  - 색상, 폰트 일관성
+  - 간격, 패딩 일관성
+  - 다크 모드 대응 (선택)
+
+Step 4: 성능 최적화
+  - 이미지 lazy loading
+  - FlatList 최적화 (keyExtractor, getItemLayout)
+  - useMemo, useCallback 사용
+
+Step 5: 실기기 테스트
+  - Android 실기기
+  - iOS 실기기 (가능하면)
+  - 다양한 화면 크기 테스트
+
+================================================================================
+6. API 연동 가이드
+================================================================================
+
+6-1. API 클라이언트 설정
+-------------------
+
+파일: src/services/api.ts
+
+```typescript
+import axios from 'axios';
+import { getToken, clearTokens } from '../utils/storage';
+
+const API_BASE_URL = process.env.API_BASE_URL || 'http://blueming-ai-env.eba-gdfew9bx.ap-northeast-2.elasticbeanstalk.com';
+
+// Axios 인스턴스 생성
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// 요청 인터셉터 (토큰 자동 추가)
+apiClient.interceptors.request.use(
+  async (config) => {
+    const token = await getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// 응답 인터셉터 (에러 처리)
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // 토큰 만료 시 로그아웃
+      await clearTokens();
+      // 로그인 화면으로 이동 (네비게이션 필요)
+    }
+    return Promise.reject(error);
+  }
+);
+
+// API 래퍼 함수
+export const apiCall = async <T>(
+  method: 'get' | 'post' | 'put' | 'delete',
+  url: string,
+  data?: any
+): Promise<T> => {
+  try {
+    const response = await apiClient({ method, url, data });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+```
+
+6-2. 인증 API
+-------------------
+
+파일: src/services/auth.ts
+
+```typescript
+import { apiCall } from './api';
+import { UserResponse } from '../types';
+
+export const authAPI = {
+  // 현재 유저 정보
+  getCurrentUser: () =>
+    apiCall<UserResponse>('get', '/api/auth/me'),
+
+  // 로그아웃
+  logout: (refreshToken: string) =>
+    apiCall('post', '/api/auth/logout', { refreshToken }),
+
+  // Google 로그인은 WebView 또는 expo-auth-session 사용
+};
+```
+
+6-3. 모델 API
+-------------------
+
+파일: src/services/models.ts
+
+```typescript
+import { apiCall } from './api';
+import { PageResponse, ModelDetailResponse } from '../types';
+
+export const modelsAPI = {
+  // 인기 모델 리스트
+  getPopularModels: (page: number, size: number = 20) =>
+    apiCall<PageResponse<LoraModel>>('get', `/api/models/popular?page=${page}&size=${size}`),
+
+  // 최신 모델 리스트
+  getPublicModels: (page: number, size: number = 20) =>
+    apiCall<PageResponse<LoraModel>>('get', `/api/models?page=${page}&size=${size}`),
+
+  // 모델 상세
+  getModelDetail: (modelId: number) =>
+    apiCall<ModelDetailResponse>('get', `/api/models/${modelId}`),
+
+  // 좋아요 토글
+  toggleLike: (modelId: number) =>
+    apiCall('post', `/api/models/${modelId}/like`),
+};
+```
+
+6-4. 유저 API
+-------------------
+
+파일: src/services/user.ts
+
+```typescript
+import { apiCall } from './api';
+import { UserResponse, PageResponse, LoraModel } from '../types';
+
+export const userAPI = {
+  // 내 프로필
+  getMyProfile: () =>
+    apiCall<UserResponse>('get', '/api/users/me'),
+
+  // 내 모델
+  getMyModels: (page: number, size: number = 20) =>
+    apiCall<PageResponse<LoraModel>>('get', `/api/models/my?page=${page}&size=${size}`),
+};
+```
+
+================================================================================
+7. 주요 기능 구현 가이드
+================================================================================
+
+7-1. 인증 Context
+-------------------
+
+파일: src/context/AuthContext.tsx
+
+```typescript
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { saveToken, getToken, clearTokens } from '../utils/storage';
+import { authAPI } from '../services/auth';
+import { UserResponse } from '../types';
+
+interface AuthContextType {
+  user: UserResponse | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 초기 로드 시 토큰 확인
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const token = await getToken();
+      if (token) {
+        const userData = await authAPI.getCurrentUser();
+        setUser(userData);
+      }
+    } catch (error) {
+      await clearTokens();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (accessToken: string, refreshToken: string) => {
+    await saveToken(accessToken, refreshToken);
+    const userData = await authAPI.getCurrentUser();
+    setUser(userData);
+  };
+
+  const logout = async () => {
+    await clearTokens();
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  return context;
+};
+```
+
+7-2. 네비게이션 구조
+-------------------
+
+파일: src/navigation/AppNavigator.tsx
+
+```typescript
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAuth } from '../context/AuthContext';
+
+// Screens
+import LoginScreen from '../screens/auth/LoginScreen';
+import ModelListScreen from '../screens/models/ModelListScreen';
+import ModelDetailScreen from '../screens/models/ModelDetailScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+// 홈 스택
+function HomeStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="ModelList" component={ModelListScreen} />
+      <Stack.Screen name="ModelDetail" component={ModelDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// 메인 탭
+function MainTabs() {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+// 앱 네비게이터
+export default function AppNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null; // 또는 스플래시 화면
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="Main" component={MainTabs} />
+        ) : (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+```
+
+7-3. 모델 리스트 화면
+-------------------
+
+파일: src/screens/models/ModelListScreen.tsx
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { View, FlatList, RefreshControl } from 'react-native';
+import { modelsAPI } from '../../services/models';
+import ModelCard from '../../components/models/ModelCard';
+import { LoraModel } from '../../types';
+
+export default function ModelListScreen({ navigation }) {
+  const [models, setModels] = useState<LoraModel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  useEffect(() => {
+    loadModels();
+  }, []);
+
+  const loadModels = async (refresh = false) => {
+    if (loading || (!hasMore && !refresh)) return;
+
+    try {
+      setLoading(true);
+      const currentPage = refresh ? 0 : page;
+      const response = await modelsAPI.getPopularModels(currentPage);
+
+      setModels(refresh ? response.content : [...models, ...response.content]);
+      setPage(currentPage + 1);
+      setHasMore(currentPage < response.totalPages - 1);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadModels(true);
+  };
+
+  const handleModelPress = (modelId: number) => {
+    navigation.navigate('ModelDetail', { modelId });
+  };
+
+  return (
+    <FlatList
+      data={models}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <ModelCard model={item} onPress={() => handleModelPress(item.id)} />
+      )}
+      onEndReached={() => loadModels()}
+      onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    />
+  );
+}
+```
+
+7-4. 스토리지 유틸리티
+-------------------
+
+파일: src/utils/storage.ts
+
+```typescript
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const ACCESS_TOKEN_KEY = 'accessToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
+
+export const saveToken = async (accessToken: string, refreshToken: string) => {
+  await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+};
+
+export const getToken = async () => {
+  return await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+};
+
+export const clearTokens = async () => {
+  await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
+  await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+};
+```
+
+================================================================================
+8. 테스트 방법
+================================================================================
+
+8-1. 개발 서버 실행
+-------------------
+
+```bash
+npm start
+```
+
+옵션:
+- a: Android 에뮬레이터
+- i: iOS 시뮬레이터
+- w: 웹 브라우저
+- QR 코드: 실기기 (Expo Go 앱)
+
+8-2. 실기기 테스트
+-------------------
+
+1. Expo Go 앱 설치
+2. 같은 WiFi 네트워크 연결
+3. QR 코드 스캔
+4. 앱 자동 로드
+
+8-3. 에뮬레이터 테스트
+-------------------
+
+Android:
+1. Android Studio에서 AVD 실행
+2. 터미널에서 'a' 입력
+
+iOS (Mac만):
+1. Xcode 시뮬레이터 실행
+2. 터미널에서 'i' 입력
+
+8-4. 디버깅
+-------------------
+
+1. Console 로그:
+   ```typescript
+   console.log('Data:', data);
+   ```
+
+2. React Native Debugger:
+   - 크롬 개발자 도구 사용
+   - Cmd/Ctrl + D → Debug
+
+3. Expo DevTools:
+   - 브라우저에서 자동 열림
+   - 로그, 성능 모니터링
+
+================================================================================
+9. 배포 준비
+================================================================================
+
+9-1. APK 빌드 (Android)
+-------------------
+
+```bash
+# EAS Build 설치
+npm install -g eas-cli
+
+# EAS 로그인
+eas login
+
+# 프로젝트 설정
+eas build:configure
+
+# APK 빌드
+eas build --platform android --profile preview
+```
+
+9-2. IPA 빌드 (iOS)
+-------------------
+
+```bash
+eas build --platform ios --profile preview
+```
+
+9-3. 테스트 배포
+-------------------
+
+내부 테스터 배포:
+```bash
+eas submit --platform android
+```
+
+================================================================================
+10. 트러블슈팅
+================================================================================
+
+10-1. 일반적인 문제
+-------------------
+
+문제: "Metro bundler가 시작되지 않음"
+해결:
+  ```bash
+  npx expo start --clear
+  ```
+
+문제: "모듈을 찾을 수 없음"
+해결:
+  ```bash
+  rm -rf node_modules
+  npm install
+  npx expo start --clear
+  ```
+
+문제: "Android 에뮬레이터가 감지되지 않음"
+해결:
+  - Android Studio에서 AVD 먼저 실행
+  - adb devices로 확인
+
+10-2. API 연동 문제
+-------------------
+
+문제: "CORS 에러"
+해결:
+  - 모바일에서는 CORS 없음
+  - 웹 미리보기에서만 발생
+  - 실기기/에뮬레이터에서 테스트
+
+문제: "401 Unauthorized"
+해결:
+  - 토큰 확인
+  - AsyncStorage에 저장되었는지 확인
+  - 헤더에 포함되는지 확인
+
+10-3. 성능 문제
+-------------------
+
+문제: "이미지가 느리게 로드됨"
+해결:
+  - expo-image 사용
+  - 이미지 캐싱 활성화
+  - 썸네일 크기 조정
+
+문제: "FlatList 스크롤이 버벅임"
+해결:
+  - keyExtractor 추가
+  - getItemLayout 추가
+  - removeClippedSubviews={true}
+
+================================================================================
+11. 개발 체크리스트
+================================================================================
+
+환경 설정:
+  [ ] Node.js 설치 (v18+)
+  [ ] Expo CLI 설치
+  [ ] Android Studio 또는 Xcode 설치
+  [ ] Expo Go 앱 설치 (실기기)
+  [ ] VS Code + 확장 설치
+
+프로젝트 초기화:
+  [ ] Expo 프로젝트 생성
+  [ ] 필수 패키지 설치
+  [ ] 폴더 구조 생성
+  [ ] .env 파일 설정
+  [ ] Git 초기화 및 원격 저장소 연결
+
+Phase 1 - 인증:
+  [ ] AuthContext 생성
+  [ ] AsyncStorage 유틸리티
+  [ ] API 클라이언트 설정
+  [ ] 로그인 화면
+  [ ] 자동 로그인
+
+Phase 2 - 모델 리스트:
+  [ ] 모델 API 서비스
+  [ ] ModelCard 컴포넌트
+  [ ] ModelListScreen
+  [ ] 무한 스크롤
+  [ ] Pull to Refresh
+
+Phase 3 - 모델 상세:
+  [ ] 모델 상세 API
+  [ ] ImageCarousel 컴포넌트
+  [ ] PromptCard 컴포넌트
+  [ ] ModelDetailScreen
+  [ ] 좋아요 기능
+
+Phase 4 - 프로필:
+  [ ] 유저 API 서비스
+  [ ] ProfileScreen
+  [ ] 내 모델 리스트
+  [ ] 로그아웃 기능
+
+Phase 5 - 마무리:
+  [ ] 공통 컴포넌트 (Loading, Error)
+  [ ] 에러 처리
+  [ ] 스타일링 일관성
+  [ ] 실기기 테스트
+  [ ] 버그 수정
+
+문서화:
+  [ ] README.md 작성
+  [ ] API 문서 정리
+  [ ] 시연 영상 준비
+  [ ] 제출 준비
+
+================================================================================
+부록: 유용한 명령어 모음
+================================================================================
+
+프로젝트 관리:
+  npm start                    # 개발 서버 시작
+  npm run android              # Android 실행
+  npm run ios                  # iOS 실행
+  npm run web                  # 웹 실행
+
+캐시 클리어:
+  npx expo start --clear       # Metro bundler 캐시 삭제
+  rm -rf node_modules          # 모듈 삭제
+  npm install                  # 재설치
+
+Git:
+  git status                   # 상태 확인
+  git add .                    # 모든 변경사항 스테이징
+  git commit -m "message"      # 커밋
+  git push                     # 푸시
+
+디버깅:
+  npx react-native log-android # Android 로그
+  npx react-native log-ios     # iOS 로그
+
+빌드:
+  eas build --platform android # Android 빌드
+  eas build --platform ios     # iOS 빌드
+
+================================================================================
