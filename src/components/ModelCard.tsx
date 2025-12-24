@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    aspectRatio: 3 / 4,
+    aspectRatio: 1,
     backgroundColor: '#3A3A3D',
   },
   image: {
