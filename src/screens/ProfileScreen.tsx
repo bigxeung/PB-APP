@@ -542,7 +542,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     marginBottom: Spacing.md,
-    marginHorizontal: 16,
     overflow: 'hidden',
   },
   historyHeader: {
@@ -686,7 +685,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
-    marginHorizontal: 16,
     overflow: 'hidden',
     padding: 12,
   },
