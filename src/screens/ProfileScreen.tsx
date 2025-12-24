@@ -26,7 +26,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TabType = 'models' | 'favorites' | 'generation' | 'training';
 
 export default function ProfileScreen() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, testLogin } = useAuth();
   const navigation = useNavigation<NavigationProp>();
 
   const [activeTab, setActiveTab] = useState<TabType>('models');
@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [generationHistory, setGenerationHistory] = useState<GenerationHistoryResponse[]>([]);
   const [trainingHistory, setTrainingHistory] = useState<TrainingJobResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [testLoginLoading, setTestLoginLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -111,6 +112,17 @@ export default function ProfileScreen() {
 
   const handleLoginPress = () => {
     navigation.navigate('Login');
+  };
+
+  const handleTestLogin = async () => {
+    try {
+      setTestLoginLoading(true);
+      await testLogin();
+    } catch (error) {
+      console.error('Test login failed:', error);
+    } finally {
+      setTestLoginLoading(false);
+    }
   };
 
   const { isDark } = useTheme();
@@ -356,6 +368,20 @@ export default function ProfileScreen() {
             <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.testLoginButton}
+              onPress={handleTestLogin}
+              disabled={testLoginLoading}
+            >
+              {testLoginLoading ? (
+                <ActivityIndicator size="small" color={Colors.textSecondary} />
+              ) : (
+                <>
+                  <Ionicons name="flask-outline" size={20} color={Colors.textSecondary} />
+                  <Text style={styles.testLoginButtonText}>Test Account Login</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -382,6 +408,9 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+  },
+  container: {
     flex: 1,
   },
   listContent: {
@@ -652,5 +681,22 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: FontSizes.base,
     fontWeight: '600',
+  },
+  testLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl * 2,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.md,
+  },
+  testLoginButtonText: {
+    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    fontWeight: '500',
   },
 });

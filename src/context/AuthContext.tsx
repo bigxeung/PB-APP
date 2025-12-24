@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  testLogin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +67,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const testLogin = async () => {
+    try {
+      const { accessToken, refreshToken } = await authAPI.testLogin();
+      await login(accessToken, refreshToken);
+    } catch (error) {
+      console.error('Test login failed:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -74,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user,
         login,
         logout,
+        testLogin,
       }}
     >
       {children}
