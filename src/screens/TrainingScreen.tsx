@@ -897,6 +897,15 @@ const styles = StyleSheet.create({
     height: 40,
     marginTop: Spacing.xs,
   },
+  rangeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  rangeLabel: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
