@@ -65,12 +65,14 @@
 
 ### 🟡 중간 우선순위 (Medium Priority)
 
-#### 4. ProfileScreen 완성
-- [ ] 내 모델 목록 표시
-- [ ] 생성 히스토리
-- [ ] 학습 히스토리
-- [ ] 즐겨찾기한 모델
-- [ ] 프로필 편집 기능
+#### ~~4. ProfileScreen 완성~~ ✅
+- [x] 내 모델 목록 표시 (My Models 탭)
+- [x] 생성 히스토리 (Generation 탭)
+- [x] 학습 히스토리 (Training 탭)
+- [x] 즐겨찾기한 모델 (Favorites 탭)
+- [x] 4개 탭 네비게이션
+- [x] 통계 카드 (Models, Favorites, Generations 개수)
+- [ ] 프로필 편집 기능 (선택사항)
 
 #### 5. 검색 기능
 - [ ] 검색 화면 구현
@@ -134,24 +136,37 @@
 
 ### API 연동 체크리스트
 
-- [ ] `src/services/api.ts` 파일 확인
-- [ ] conference(front)의 `src/services/api.ts` 참고
-- [ ] AsyncStorage에서 토큰 가져오기
-- [ ] 에러 처리 로직 추가
-- [ ] 로딩 상태 관리
+- [x] `src/services/api.ts` 파일 확인
+- [x] conference(front)의 `src/services/api.ts` 참고
+- [x] AsyncStorage에서 토큰 가져오기
+- [x] 에러 처리 로직 추가
+- [x] 로딩 상태 관리
+- [x] generateAPI, trainingAPI, uploadAPI, communityAPI, promptsAPI 구현
 
 ### 중요 라이브러리
 
-설치가 필요한 라이브러리:
-- [ ] `expo-image-picker` - 이미지 선택
-- [ ] `react-native-slider` or `@react-native-community/slider` - 슬라이더
+설치 완료된 라이브러리:
+- [x] `expo-image-picker` - 이미지 선택 (설치 완료)
+- [x] `@react-native-community/slider` - 슬라이더 (설치 완료)
+
+추가로 필요한 라이브러리 (선택사항):
 - [ ] `react-native-webview` - WebView (필요시)
 - [ ] `react-native-fast-image` - 이미지 최적화 (선택사항)
+- [ ] `@react-native-async-storage/async-storage` - 로컬 저장소 (이미 사용중)
 
 ---
 
 ## 📅 업데이트 로그
 
-- **2024-12-24**: TODO 리스트 작성
+- **2024-12-24 (오후)**: 🎉 핵심 기능 완성
+  - **GenerateModal 완성**: 모델 선택 모달, API 연동, 슬라이더, 진행률 폴링, 이미지 표시
+  - **TrainingScreen 완성**: 이미지 피커, S3 업로드, 학습 API 연동, 진행률 폴링, 추천 epochs 계산
+  - **ProfileScreen 완성**: 4개 탭 (My Models, Favorites, Generation, Training), 통계 카드, 히스토리 표시
+  - **API 서비스 완성**: generateAPI, trainingAPI, uploadAPI, communityAPI, promptsAPI
+  - **TypeScript 타입 정의 완성**: Generation, Training, Upload, Comment, Prompt 타입
+  - **라이브러리 설치**: expo-image-picker, @react-native-community/slider
+
+- **2024-12-24 (오전)**: TODO 리스트 작성
   - HomeScreen, TrainingScreen, GenerateModal 기본 UI 완료
   - Bottom Tab Navigation 구현 완료
+  - ModelDetailScreen 확인 (이미 완성되어 있었음)
