@@ -88,8 +88,8 @@
 - [x] 네비게이션 프로필 뷰에서 설정 아이콘 (이미 오른쪽에 위치)
 - [x] 다크 모드 / 라이트 모드 색상 수정 -trining profile 화이트모드 글씨 등등
 - [x] 앱뷰 양 옆 여백 일관화(지금 홈 트레이닝 프로필 다 다름)
-- [ ] generateModal에서 모델 안불러와지는 문제 수정 (model detail에계되야됨)
-- [ ] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
+- [x] generateModal에서 모델 안불러와지는 문제 수정 (model detail에계되야됨)
+- [x] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
 - [ ] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
 - [ ] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
 - [ ] prpfile 밑 컴포넌트 여백 문제
