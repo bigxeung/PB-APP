@@ -75,29 +75,39 @@
 - [ ] 프로필 편집 기능 (선택사항)
 
 #### 5. 검색 기능
-- [ ] 검색 화면 구현
-- [ ] 검색 API 연동
-- [ ] 필터링 (태그, 카테고리)
-- [ ] 정렬 옵션
+- [x] 검색 화면 구현
+- [x] 검색 API 연동
+- [x] 필터링 (태그, 카테고리)
+- [x] 정렬 옵션
 
 #### 6. 공통 컴포넌트 개선
-- [ ] ModelCard 컴포넌트 완성
-  - [ ] 썸네일 이미지 로딩
-  - [ ] 좋아요 버튼
-  - [ ] 즐겨찾기 버튼
-- [ ] Slider 공통 컴포넌트 제작
-- [ ] ImagePicker 공통 컴포넌트 제작
+- [x] ModelCard 컴포넌트 완성
+- [x] 썸네일 이미지 로딩
+- [x] 좋아요 버튼
+- [ ] 홈화면 태그 필터 중복 선택 가능하게 변경(ALL 제거 -> 선택이 안되어있으면 ALL 그 외에 태그 선택하면 필터 적용 중복으로, 필터 적용된 상태에서 인기 / 최신 적용 되야됨)
+- [ ] 네비게이션 프로필 뷰에서 설정 아이콘 왼쪽에 있는 문제 -> 오른쪽으로 이동
+- [ ] 다크 모드 / 라이트 모드 색상 수정 (진행 중) -trining profile 화이트모드 글씨 등등
+- [ ] 앱뷰 양 옆 여백 일관화(지금 홈 트레이닝 프로필 다 다름)
+- [ ] generateModal에서 모델 안불러와지는 문제 수정 (model detail에계되야됨)
+- [ ] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
+- [ ] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
+- [ ] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
+- [ ] prpfile 밑 컴포넌트 여백 문제
+- [ ] generate histpry 모델 카드 뷰처럼 수정
+- [ ] generate detail 추가
+- [ ] training detail 추가
+- [ ] 프로필에 favorite과 내 model에서 모델 선택시 홈으로 가진 다음 모델 창이 열리는 문제 해결(history 위에 놓이도록 변경)
+- [ ] 모델 owner 수정버튼
+- [ ] 모델 수정 기능(public private, 썸네일 수정, 태그 수정, 프롬포트 수정 등 model detail에 있는 모든 기능)
+- [ ] 모델 detail에 슬라이더 수정 (지금은 이미지 1개 고정인 것 처럼 보임 front 와 같이 수정)
+- [ ] 홈 모델 애니메이션 (태그나 검색 시 부자연스럽게 전환되는 문제 수정)
 - [ ] Loading Spinner 컴포넌트
 - [ ] Empty State 컴포넌트
 
 ### 🟢 낮은 우선순위 (Low Priority)
 
 #### 7. 추가 기능
-- [ ] 다크 모드 / 라이트 모드 토글
-- [ ] 앱 설정 화면
 - [ ] 알림 기능
-- [ ] 이미지 공유 기능
-- [ ] 모델 다운로드 기능 (오프라인 사용)
 
 #### 8. 성능 최적화
 - [ ] 이미지 lazy loading
@@ -150,7 +160,6 @@
 - [x] `@react-native-community/slider` - 슬라이더 (설치 완료)
 
 추가로 필요한 라이브러리 (선택사항):
-- [ ] `react-native-webview` - WebView (필요시)
 - [ ] `react-native-fast-image` - 이미지 최적화 (선택사항)
 - [ ] `@react-native-async-storage/async-storage` - 로컬 저장소 (이미 사용중)
 

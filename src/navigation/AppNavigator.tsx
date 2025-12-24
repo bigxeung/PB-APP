@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -44,6 +45,8 @@ function HomeStackNavigator() {
 
 // 메인 탭 네비게이터
 function MainTabNavigator() {
+  const { isDark } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -61,7 +64,11 @@ function MainTabNavigator() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: isDark ? '#8E8E93' : '#8E8E93',
+        tabBarStyle: {
+          backgroundColor: isDark ? '#000000' : '#FFFFFF',
+          borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        },
         headerShown: false,
       })}
     >
