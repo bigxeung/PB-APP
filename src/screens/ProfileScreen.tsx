@@ -105,14 +105,8 @@ export default function ProfileScreen() {
   };
 
   const handleModelPress = (modelId: number) => {
-    // @ts-ignore - 네비게이션 타입 이슈
-    navigation.navigate('Main', {
-      screen: 'Home',
-      params: {
-        screen: 'ModelDetail',
-        params: { modelId },
-      },
-    });
+    // @ts-ignore - Navigate directly to ModelDetail
+    navigation.navigate('ModelDetail', { modelId });
   };
 
   const handleLoginPress = () => {
@@ -122,6 +116,10 @@ export default function ProfileScreen() {
   const { isDark } = useTheme();
   const bgColor = isDark ? Colors.bgDark : '#FFFFFF';
   const textColor = isDark ? Colors.textPrimary : '#000';
+  const secondaryTextColor = isDark ? Colors.textSecondary : '#666';
+  const mutedTextColor = isDark ? Colors.textMuted : '#999';
+  const cardBgColor = isDark ? Colors.bgCard : '#F5F5F5';
+  const borderColor = isDark ? Colors.border : '#E0E0E0';
 
   const renderListHeader = () => (
     <>
@@ -134,12 +132,12 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color={Colors.textMuted} />
           )}
         </View>
-        <Text style={styles.nickname}>{user?.nickname || 'User'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+        <Text style={[styles.nickname, { color: textColor }]}>{user?.nickname || 'User'}</Text>
+        <Text style={[styles.email, { color: secondaryTextColor }]}>{user?.email}</Text>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={[styles.logoutText, { color: Colors.error }]}>Logout</Text>
         </TouchableOpacity>
       </View>
 
@@ -147,18 +145,18 @@ export default function ProfileScreen() {
       {!loading && (
         <View style={styles.stats}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{myModels?.length || 0}</Text>
-            <Text style={styles.statLabel}>Models</Text>
+            <Text style={[styles.statValue, { color: textColor }]}>{myModels?.length || 0}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Models</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: borderColor }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{likedModels?.length || 0}</Text>
-            <Text style={styles.statLabel}>Favorites</Text>
+            <Text style={[styles.statValue, { color: textColor }]}>{likedModels?.length || 0}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Favorites</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: borderColor }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{generationHistory?.length || 0}</Text>
-            <Text style={styles.statLabel}>Generations</Text>
+            <Text style={[styles.statValue, { color: textColor }]}>{generationHistory?.length || 0}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Generations</Text>
           </View>
         </View>
       )}
@@ -209,33 +207,33 @@ export default function ProfileScreen() {
       case 'models':
         return (
           <View style={styles.emptyState}>
-            <Ionicons name="cube-outline" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No models yet</Text>
-            <Text style={styles.emptyHint}>Train your first model to get started</Text>
+            <Ionicons name="cube-outline" size={64} color={mutedTextColor} />
+            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No models yet</Text>
+            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Train your first model to get started</Text>
           </View>
         );
       case 'favorites':
         return (
           <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No favorites yet</Text>
-            <Text style={styles.emptyHint}>Like models to see them here</Text>
+            <Ionicons name="heart-outline" size={64} color={mutedTextColor} />
+            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No favorites yet</Text>
+            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Like models to see them here</Text>
           </View>
         );
       case 'generation':
         return (
           <View style={styles.emptyState}>
-            <Ionicons name="images-outline" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No generation history</Text>
-            <Text style={styles.emptyHint}>Generate images to see them here</Text>
+            <Ionicons name="images-outline" size={64} color={mutedTextColor} />
+            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No generation history</Text>
+            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Generate images to see them here</Text>
           </View>
         );
       case 'training':
         return (
           <View style={styles.emptyState}>
-            <Ionicons name="construct-outline" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No training history</Text>
-            <Text style={styles.emptyHint}>Train models to see them here</Text>
+            <Ionicons name="construct-outline" size={64} color={mutedTextColor} />
+            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No training history</Text>
+            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Train models to see them here</Text>
           </View>
         );
       default:
@@ -254,44 +252,53 @@ export default function ProfileScreen() {
         );
       case 'generation':
         return (
-          <View style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.historyTitle}>{item.modelTitle}</Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  item.status === 'SUCCESS' && styles.statusSuccess,
-                  item.status === 'GENERATING' && styles.statusGenerating,
-                  item.status === 'FAILED' && styles.statusFailed,
-                ]}
-              >
-                <Text style={styles.statusText}>{item.status}</Text>
-              </View>
-            </View>
-            <Text style={styles.historyPrompt} numberOfLines={2}>
-              {item.prompt}
-            </Text>
-            <Text style={styles.historyDate}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
+          <View style={[styles.historyCard, { backgroundColor: cardBgColor, borderColor }]}>
             {item.generatedImages.length > 0 && (
-              <ScrollView horizontal style={styles.historyImages}>
-                {item.generatedImages.map((img: any) => (
-                  <Image
-                    key={img.id}
-                    source={{ uri: img.s3Url }}
-                    style={styles.historyImage}
-                  />
-                ))}
-              </ScrollView>
+              <View style={styles.generationImageContainer}>
+                <Image
+                  source={{ uri: item.generatedImages[0].s3Url }}
+                  style={styles.generationMainImage}
+                  resizeMode="cover"
+                />
+                {item.generatedImages.length > 1 && (
+                  <View style={styles.imageCountBadge}>
+                    <Ionicons name="images" size={14} color="#fff" />
+                    <Text style={styles.imageCountText}>{item.generatedImages.length}</Text>
+                  </View>
+                )}
+              </View>
             )}
+            <View style={styles.generationCardContent}>
+              <View style={styles.historyHeader}>
+                <Text style={[styles.historyTitle, { color: textColor }]} numberOfLines={1}>
+                  {item.modelTitle}
+                </Text>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    item.status === 'SUCCESS' && styles.statusSuccess,
+                    item.status === 'GENERATING' && styles.statusGenerating,
+                    item.status === 'FAILED' && styles.statusFailed,
+                  ]}
+                >
+                  <Text style={styles.statusText}>{item.status}</Text>
+                </View>
+              </View>
+              <Text style={[styles.historyPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
+                {item.prompt}
+              </Text>
+              <Text style={[styles.historyDate, { color: mutedTextColor }]}>
+                {new Date(item.createdAt).toLocaleDateString()}
+              </Text>
+            </View>
           </View>
         );
       case 'training':
         return (
-          <View style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.historyTitle}>{item.modelName}</Text>
+          <View style={[styles.historyCard, { backgroundColor: cardBgColor, borderColor }]}>
+            <View style={styles.trainingCardContent}>
+              <View style={styles.historyHeader}>
+              <Text style={[styles.historyTitle, { color: textColor }]}>{item.modelName}</Text>
               <View
                 style={[
                   styles.statusBadge,
@@ -304,21 +311,22 @@ export default function ProfileScreen() {
               </View>
             </View>
             {item.modelDescription && (
-              <Text style={styles.historyPrompt} numberOfLines={2}>
+              <Text style={[styles.historyPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
                 {item.modelDescription}
               </Text>
             )}
             <View style={styles.trainingStats}>
-              <Text style={styles.trainingStat}>
+              <Text style={[styles.trainingStat, { color: secondaryTextColor }]}>
                 Epochs: {item.currentEpoch}/{item.totalEpochs}
               </Text>
-              <Text style={styles.trainingStat}>
+              <Text style={[styles.trainingStat, { color: secondaryTextColor }]}>
                 Images: {item.trainingImagesCount}
               </Text>
             </View>
-            <Text style={styles.historyDate}>
+            <Text style={[styles.historyDate, { color: mutedTextColor }]}>
               {new Date(item.createdAt).toLocaleDateString()}
             </Text>
+            </View>
           </View>
         );
       default:
@@ -342,7 +350,7 @@ export default function ProfileScreen() {
           <View style={styles.notLoggedIn}>
             <Ionicons name="person-circle-outline" size={80} color="#828282" />
             <Text style={[styles.notLoggedInTitle, { color: textColor }]}>Login Required</Text>
-            <Text style={styles.notLoggedInText}>
+            <Text style={[styles.notLoggedInText, { color: secondaryTextColor }]}>
               Please login to view your profile and manage your models.
             </Text>
             <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
@@ -377,6 +385,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    paddingHorizontal: 16,
     paddingBottom: Spacing.lg,
   },
   header: {
@@ -500,10 +509,11 @@ const styles = StyleSheet.create({
   modelList: {},
   modelRow: {
     justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 16,
   },
   modelItem: {
     width: '48%',
-    marginBottom: Spacing.md,
   },
   historyGrid: {
     gap: Spacing.md,
@@ -511,9 +521,10 @@ const styles = StyleSheet.create({
   historyCard: {
     backgroundColor: Colors.bgCard,
     borderRadius: Radius.lg,
-    padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: Spacing.md,
+    overflow: 'hidden',
   },
   historyHeader: {
     flexDirection: 'row',
@@ -557,6 +568,39 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.xs,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
+  },
+  generationImageContainer: {
+    width: '100%',
+    height: 200,
+    position: 'relative',
+  },
+  generationMainImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.bgHover,
+  },
+  imageCountBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  imageCountText: {
+    fontSize: FontSizes.xs,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  generationCardContent: {
+    padding: Spacing.lg,
+  },
+  trainingCardContent: {
+    padding: Spacing.lg,
   },
   historyImages: {
     marginTop: Spacing.md,

@@ -37,7 +37,9 @@ export default function TrainingScreen() {
   const [triggerWord, setTriggerWord] = useState('');
   const [learningRate, setLearningRate] = useState(0.0001);
   const [epochs, setEpochs] = useState(10);
-  const [loraRank, setLoraRank] = useState(32);
+  const loraRankOptions = [16, 32, 64];
+  const [loraRankIndex, setLoraRankIndex] = useState(1); // Default to 32 (index 1)
+  const loraRank = loraRankOptions[loraRankIndex];
   const [baseModel, setBaseModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
 
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
@@ -287,6 +289,11 @@ export default function TrainingScreen() {
 
   const { isDark } = useTheme();
   const bgColor = isDark ? Colors.bgDark : '#FFFFFF';
+  const textColor = isDark ? Colors.textPrimary : '#000';
+  const secondaryTextColor = isDark ? Colors.textSecondary : '#666';
+  const mutedTextColor = isDark ? Colors.textMuted : '#999';
+  const cardBgColor = isDark ? Colors.bgCard : '#F5F5F5';
+  const borderColor = isDark ? Colors.border : '#E0E0E0';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
@@ -300,8 +307,8 @@ export default function TrainingScreen() {
             <View style={styles.shape3} />
           </View>
 
-          <Text style={styles.heroTitle}>Craft Your AI Masterpiece</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: textColor }]}>Craft Your AI Masterpiece</Text>
+          <Text style={[styles.heroSubtitle, { color: secondaryTextColor }]}>
             Bring your vision to life by training a custom LoRA model.{'\n'}
             Just upload your images, and we'll handle the rest.
           </Text>
@@ -309,18 +316,18 @@ export default function TrainingScreen() {
 
       {/* Training Form Card */}
       <View style={styles.formContainer}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Training Configuration</Text>
+        <View style={[styles.card, { backgroundColor: cardBgColor, borderColor }]}>
+          <Text style={[styles.cardTitle, { color: textColor }]}>Training Configuration</Text>
 
           {/* Model Title */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Model Title *</Text>
+            <Text style={[styles.label, { color: secondaryTextColor }]}>Model Title *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: cardBgColor, borderColor, color: textColor }]}
               value={title}
               onChangeText={setTitle}
               placeholder="Enter your model name..."
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={mutedTextColor}
               onFocus={handleAuthCheck}
               editable={!isTraining}
             />
@@ -328,13 +335,13 @@ export default function TrainingScreen() {
 
           {/* Description */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Description</Text>
+            <Text style={[styles.label, { color: secondaryTextColor }]}>Description</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { backgroundColor: cardBgColor, borderColor, color: textColor }]}
               value={description}
               onChangeText={setDescription}
               placeholder="Describe your model..."
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={mutedTextColor}
               multiline
               numberOfLines={4}
               onFocus={handleAuthCheck}
@@ -344,13 +351,13 @@ export default function TrainingScreen() {
 
           {/* Trigger Word */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Trigger Word</Text>
+            <Text style={[styles.label, { color: secondaryTextColor }]}>Trigger Word</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: cardBgColor, borderColor, color: textColor }]}
               value={triggerWord}
               onChangeText={setTriggerWord}
               placeholder="e.g., ohwx, sks..."
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={mutedTextColor}
               onFocus={handleAuthCheck}
               editable={!isTraining}
             />
@@ -360,12 +367,12 @@ export default function TrainingScreen() {
           <View style={styles.parametersGrid}>
             {/* Learning Rate */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>Learning Rate: {learningRate.toExponential(1)}</Text>
+              <Text style={[styles.label, { color: secondaryTextColor }]}>Learning Rate: {learningRate.toExponential(1)}</Text>
               <Slider
                 style={styles.slider}
-                minimumValue={0.00001}
+                minimumValue={0.0001}
                 maximumValue={0.001}
-                step={0.00001}
+                step={0.0001}
                 value={learningRate}
                 onValueChange={setLearningRate}
                 minimumTrackTintColor={Colors.primary}
@@ -377,7 +384,7 @@ export default function TrainingScreen() {
 
             {/* Epochs */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>Epochs: {epochs}</Text>
+              <Text style={[styles.label, { color: secondaryTextColor }]}>Epochs: {epochs}</Text>
               <Slider
                 style={styles.slider}
                 minimumValue={5}
@@ -394,14 +401,14 @@ export default function TrainingScreen() {
 
             {/* LoRA Rank */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>LoRA Rank: {loraRank}</Text>
+              <Text style={[styles.label, { color: secondaryTextColor }]}>LoRA Rank: {loraRank}</Text>
               <Slider
                 style={styles.slider}
-                minimumValue={8}
-                maximumValue={128}
-                step={8}
-                value={loraRank}
-                onValueChange={setLoraRank}
+                minimumValue={0}
+                maximumValue={2}
+                step={1}
+                value={loraRankIndex}
+                onValueChange={(value) => setLoraRankIndex(Math.round(value))}
                 minimumTrackTintColor={Colors.primary}
                 maximumTrackTintColor={Colors.border}
                 thumbTintColor={Colors.primary}
@@ -413,7 +420,7 @@ export default function TrainingScreen() {
           {/* Image Upload Section */}
           <View style={styles.formGroup}>
             <View style={styles.labelRow}>
-              <Text style={styles.label}>Training Images *</Text>
+              <Text style={[styles.label, { color: secondaryTextColor }]}>Training Images *</Text>
               <Text style={styles.imageCount}>
                 {selectedImages.length} / 40 images
                 {selectedImages.length < 10 && ' (min 10 required)'}
@@ -427,8 +434,8 @@ export default function TrainingScreen() {
                 disabled={isTraining || isUploading}
               >
                 <Ionicons name="cloud-upload-outline" size={48} color={Colors.textMuted} />
-                <Text style={styles.uploadText}>Tap to upload images</Text>
-                <Text style={styles.uploadHint}>10-40 images required (JPG, PNG, WebP)</Text>
+                <Text style={[styles.uploadText, { color: secondaryTextColor }]}>Tap to upload images</Text>
+                <Text style={[styles.uploadHint, { color: mutedTextColor }]}>10-40 images required (JPG, PNG, WebP)</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -491,7 +498,7 @@ export default function TrainingScreen() {
             }
           >
             {(isTraining || isUploading) && <ActivityIndicator color={Colors.textPrimary} style={styles.buttonLoader} />}
-            <Text style={styles.startButtonText}>
+            <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>
               {isUploading
                 ? 'Uploading...'
                 : isTraining
@@ -502,8 +509,8 @@ export default function TrainingScreen() {
         </View>
 
         {/* Training Progress Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Training Progress</Text>
+        <View style={[styles.card, { backgroundColor: cardBgColor, borderColor }]}>
+          <Text style={[styles.cardTitle, { color: textColor }]}>Training Progress</Text>
 
           {isTraining ? (
             <View style={styles.progressSection}>
@@ -518,7 +525,7 @@ export default function TrainingScreen() {
               {currentEpoch > 0 && totalEpochs > 0 && (
                 <View style={styles.progressContainer}>
                   <View style={styles.progressHeader}>
-                    <Text style={styles.progressLabel}>Training Progress</Text>
+                    <Text style={[styles.progressLabel, { color: secondaryTextColor }]}>Training Progress</Text>
                     <Text style={styles.progressValue}>
                       Epoch {currentEpoch} / {totalEpochs}
                     </Text>
@@ -534,10 +541,10 @@ export default function TrainingScreen() {
                   </View>
 
                   <View style={styles.progressFooter}>
-                    <Text style={styles.progressPercentage}>
+                    <Text style={[styles.progressPercentage, { color: mutedTextColor }]}>
                       {Math.round((currentEpoch / totalEpochs) * 100)}% Complete
                     </Text>
-                    <Text style={styles.progressRemaining}>
+                    <Text style={[styles.progressRemaining, { color: mutedTextColor }]}>
                       {totalEpochs - currentEpoch} epochs remaining
                     </Text>
                   </View>
@@ -546,7 +553,7 @@ export default function TrainingScreen() {
             </View>
           ) : (
             <View style={styles.noTrainingMessage}>
-              <Text style={styles.noTrainingText}>
+              <Text style={[styles.noTrainingText, { color: mutedTextColor }]}>
                 Training has not started yet. Upload images and start training to see progress.
               </Text>
             </View>
