@@ -112,6 +112,14 @@ export const modelsAPI = {
 
   getLikeStatus: (modelId: number) =>
     apiCall<{ isLiked: boolean }>('get', `/api/models/${modelId}/like/status`),
+
+  filterByTags: (tags: string[], page: number = 0, size: number = 20) => {
+    const tagParams = tags.map(tag => `tags=${encodeURIComponent(tag)}`).join('&');
+    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}`);
+  },
+
+  searchModels: (query: string, page: number = 0, size: number = 20) =>
+    apiCall<PageResponse<LoraModel>>('get', `/api/models/search?query=${encodeURIComponent(query)}&page=${page}&size=${size}`),
 };
 
 // User API
@@ -131,8 +139,25 @@ export const generateAPI = {
   getGenerationProgress: (historyId: number) =>
     apiCall<GenerationProgressResponse>('get', `/api/generate/history/${historyId}/progress`),
 
-  getGenerationHistory: (page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<GenerationHistoryResponse>>('get', `/api/generate/history/my?page=${page}&size=${size}`),
+  getGenerationHistory: (page: number = 0, size: number = 20, modelId?: number) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (modelId !== undefined && modelId !== null) {
+      params.append('modelId', modelId.toString());
+    }
+    return apiCall<PageResponse<GenerationHistoryResponse>>('get', `/api/generate/history/my?${params.toString()}`);
+  },
+
+  getAvailableModels: () =>
+    apiCall<Array<{ id: number; title: string }>>('get', '/api/generate/history/available-models'),
+
+  getHistoryDetail: (historyId: number) =>
+    apiCall<GenerationHistoryResponse>('get', `/api/generate/history/${historyId}`),
+
+  deleteHistory: (historyId: number) =>
+    apiCall('delete', `/api/generate/history/${historyId}`, {}),
 };
 
 // Training API
@@ -200,4 +225,22 @@ export const promptsAPI = {
 
   deletePrompt: (modelId: number, promptId: number) =>
     apiCall('delete', `/api/models/${modelId}/prompts/${promptId}`, {}),
+};
+
+// Tags API
+export const tagsAPI = {
+  getAllTags: () =>
+    apiCall<Array<{ id: number; name: string; category?: string; usageCount?: number }>>('get', '/api/tags'),
+
+  getPopularTags: () =>
+    apiCall<Array<{ id: number; name: string; category?: string; usageCount?: number }>>('get', '/api/tags/popular'),
+
+  searchTags: (keyword: string) =>
+    apiCall<Array<{ id: number; name: string; category?: string; usageCount?: number }>>('get', `/api/tags/search?keyword=${encodeURIComponent(keyword)}`),
+
+  addTagToModel: (modelId: number, tagName: string, category?: string) =>
+    apiCall('post', `/api/tags/models/${modelId}`, { tagName, category }),
+
+  removeTagFromModel: (modelId: number, tagId: number) =>
+    apiCall('delete', `/api/tags/models/${modelId}/tags/${tagId}`, {}),
 };

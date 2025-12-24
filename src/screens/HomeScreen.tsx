@@ -12,16 +12,19 @@ import {
   Dimensions,
   ScrollView,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { modelsAPI } from '../services/api';
-import { LoraModel, HomeStackParamList } from '../types';
+import { modelsAPI, tagsAPI } from '../services/api';
+import { LoraModel, HomeStackParamList, TagResponse } from '../types';
 import ModelCard from '../components/ModelCard';
 import ModelCardSkeleton from '../components/ModelCardSkeleton';
 import GenerateModal from '../components/generate/GenerateModal';
+import TopNavigation from '../components/TopNavigation';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ModelList'>;
 
@@ -30,6 +33,7 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { isAuthenticated } = useAuth();
+  const { isDark } = useTheme();
   const [models, setModels] = useState<LoraModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -40,15 +44,23 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [tags, setTags] = useState<TagResponse[]>([]);
 
   const heroAnimation = useRef(new Animated.Value(0)).current;
   const fabAnimation = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<any>(null);
 
   useEffect(() => {
     setPage(0);
     setHasMore(true);
     loadModels(true);
-  }, [tab]);
+  }, [tab, selectedTag]);
+
+  useEffect(() => {
+    loadTags();
+  }, []);
 
   useEffect(() => {
     // Hero and FAB animations
@@ -67,6 +79,15 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
+  const loadTags = async () => {
+    try {
+      const response = await tagsAPI.getPopularTags();
+      setTags(response);
+    } catch (error) {
+      console.error('Failed to load tags:', error);
+    }
+  };
+
   const loadModels = async (refresh = false) => {
     if (loading || (!hasMore && !refresh)) {
       console.log('⏭️ Skipping loadModels:', { loading, hasMore, refresh });
@@ -78,9 +99,17 @@ export default function HomeScreen() {
       setError(null);
       const currentPage = refresh ? 0 : page;
 
-      const response = tab === 'popular'
-        ? await modelsAPI.getPopularModels(currentPage, 20)
-        : await modelsAPI.getPublicModels(currentPage, 20);
+      let response;
+
+      // 태그가 선택된 경우 필터 API 사용
+      if (selectedTag) {
+        response = await modelsAPI.filterByTags([selectedTag], currentPage, 20);
+      } else {
+        // 태그가 없는 경우 기존 로직
+        response = tab === 'popular'
+          ? await modelsAPI.getPopularModels(currentPage, 20)
+          : await modelsAPI.getPublicModels(currentPage, 20);
+      }
 
       if (refresh) {
         setModels(response.content);
@@ -140,10 +169,43 @@ export default function HomeScreen() {
     loadModels(true);
   };
 
+  const handleSearchPress = () => {
+    if (!showSearch) {
+      setShowSearch(true);
+      // 검색바가 렌더링될 때까지 약간 대기 후 스크롤
+      setTimeout(() => {
+        const scrollOffset = 280; // HeroSection의 대략적인 높이
+        if (flatListRef.current) {
+          // FlatList인 경우
+          if ('scrollToOffset' in flatListRef.current) {
+            flatListRef.current.scrollToOffset({
+              offset: scrollOffset,
+              animated: true,
+            });
+          }
+          // ScrollView인 경우
+          else if ('scrollTo' in flatListRef.current) {
+            flatListRef.current.scrollTo({
+              y: scrollOffset,
+              animated: true,
+            });
+          }
+        }
+      }, 100);
+    } else {
+      setShowSearch(false);
+    }
+  };
+
+  const handleTagSelect = (tagName: string | null) => {
+    setSelectedTag(tagName);
+  };
+
   const renderHeroSection = () => (
     <Animated.View
       style={[
         styles.heroSection,
+        { backgroundColor: bgColor },
         {
           opacity: heroAnimation,
           transform: [
@@ -163,7 +225,7 @@ export default function HomeScreen() {
         <View style={styles.shape3} />
       </View>
 
-      <Text style={styles.heroTitle}>Where AI Blossoms</Text>
+      <Text style={[styles.heroTitle, { color: textColor }]}>Where AI Blossoms</Text>
       <Text style={styles.heroSubtitle}>
         Blueming AI is where your ideas come to life.{'\n'}
         Explore, create, and share with a global community.
@@ -180,10 +242,13 @@ export default function HomeScreen() {
 
   const renderSearchBar = () => (
     <View style={styles.searchSection}>
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, {
+        backgroundColor: isDark ? 'rgba(40, 40, 43, 0.8)' : 'rgba(240, 240, 240, 1)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      }]}>
         <Ionicons name="search" size={20} color="#828282" style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: textColor }]}
           placeholder="Search models..."
           placeholderTextColor="#828282"
           value={searchQuery}
@@ -206,7 +271,11 @@ export default function HomeScreen() {
           style={[styles.tab, tab === 'popular' && styles.tabActive]}
           onPress={() => setTab('popular')}
         >
-          <Text style={[styles.tabText, tab === 'popular' && styles.tabTextActive]}>
+          <Text style={[
+            styles.tabText,
+            !isDark && tab !== 'popular' && { color: '#666' },
+            tab === 'popular' && styles.tabTextActive
+          ]}>
             Popular
           </Text>
         </TouchableOpacity>
@@ -214,7 +283,11 @@ export default function HomeScreen() {
           style={[styles.tab, tab === 'recent' && styles.tabActive]}
           onPress={() => setTab('recent')}
         >
-          <Text style={[styles.tabText, tab === 'recent' && styles.tabTextActive]}>
+          <Text style={[
+            styles.tabText,
+            !isDark && tab !== 'recent' && { color: '#666' },
+            tab === 'recent' && styles.tabTextActive
+          ]}>
             Recent
           </Text>
         </TouchableOpacity>
@@ -227,6 +300,65 @@ export default function HomeScreen() {
     </View>
   );
 
+  const renderTagFilter = () => {
+    return (
+      <View style={[styles.tagFilterContainer, { backgroundColor: bgColor }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagFilterContent}
+        >
+          <TouchableOpacity
+            key="all"
+            style={[
+              styles.tagChip,
+              {
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+              },
+              selectedTag === null && styles.tagChipActive,
+            ]}
+            onPress={() => handleTagSelect(null)}
+          >
+            <Text
+              style={[
+                styles.tagChipText,
+                !isDark && selectedTag !== null && { color: '#666' },
+                selectedTag === null && styles.tagChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          {tags.map((tag) => (
+            <TouchableOpacity
+              key={tag.id}
+              style={[
+                styles.tagChip,
+                {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                },
+                selectedTag === tag.name && styles.tagChipActive,
+              ]}
+              onPress={() => handleTagSelect(tag.name)}
+            >
+              <Text
+                style={[
+                  styles.tagChipText,
+                  !isDark && selectedTag !== tag.name && { color: '#666' },
+                  selectedTag === tag.name && styles.tagChipTextActive,
+                ]}
+              >
+                {tag.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderFooter = () => {
     if (!loading || refreshing) return null;
     return (
@@ -236,29 +368,42 @@ export default function HomeScreen() {
     );
   };
 
+  const bgColor = isDark ? '#1A1A1D' : '#FFFFFF';
+  const textColor = isDark ? '#fff' : '#000';
+
   if (initialLoading) {
     return (
-      <ScrollView style={styles.container}>
-        {renderHeroSection()}
-        {renderSearchBar()}
-        {renderTabs()}
-        <View style={styles.skeletonContainer}>
-          <View style={styles.skeletonRow}>
-            <ModelCardSkeleton />
-            <ModelCardSkeleton />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+        <TopNavigation onSearchPress={handleSearchPress} />
+        <ScrollView
+          ref={flatListRef}
+          style={[styles.container, { backgroundColor: bgColor }]}
+        >
+          {renderHeroSection()}
+          {showSearch && renderSearchBar()}
+          {renderTabs()}
+          {renderTagFilter()}
+          <View style={styles.skeletonContainer}>
+            <View style={styles.skeletonRow}>
+              <ModelCardSkeleton />
+              <ModelCardSkeleton />
+            </View>
+            <View style={styles.skeletonRow}>
+              <ModelCardSkeleton />
+              <ModelCardSkeleton />
+            </View>
           </View>
-          <View style={styles.skeletonRow}>
-            <ModelCardSkeleton />
-            <ModelCardSkeleton />
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+      <TopNavigation onSearchPress={handleSearchPress} />
       <FlatList
+        ref={flatListRef}
+        style={[styles.container, { backgroundColor: bgColor }]}
         data={models}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
@@ -270,8 +415,9 @@ export default function HomeScreen() {
         ListHeaderComponent={() => (
           <>
             {renderHeroSection()}
-            {renderSearchBar()}
+            {showSearch && renderSearchBar()}
             {renderTabs()}
+            {renderTagFilter()}
           </>
         )}
         ListFooterComponent={renderFooter}
@@ -335,21 +481,22 @@ export default function HomeScreen() {
         visible={showGenerateModal}
         onClose={handleCloseGenerateModal}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1D',
   },
   heroSection: {
     paddingVertical: 60,
     paddingHorizontal: 20,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#1A1A1D',
   },
   animationContainer: {
     position: 'absolute',
@@ -389,7 +536,6 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#fff',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -428,19 +574,16 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(40, 40, 43, 0.8)',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
     fontSize: 16,
   },
   tabsContainer: {
@@ -561,5 +704,31 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  tagFilterContainer: {
+    paddingVertical: 12,
+  },
+  tagFilterContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  tagChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  tagChipActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  tagChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#828282',
+  },
+  tagChipTextActive: {
+    color: '#fff',
   },
 });

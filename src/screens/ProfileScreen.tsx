@@ -8,9 +8,12 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import TopNavigation from '../components/TopNavigation';
 import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../services/api';
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
 import ModelCard from '../components/ModelCard';
@@ -60,36 +63,40 @@ export default function ProfileScreen() {
   const loadMyModels = async () => {
     try {
       const response = await modelsAPI.getMyModels(0, 50);
-      setMyModels(response.content);
+      setMyModels(response.content || []);
     } catch (error) {
       console.error('Failed to load my models:', error);
+      setMyModels([]);
     }
   };
 
   const loadLikedModels = async () => {
     try {
       const response = await communityAPI.getLikedModels(0, 50);
-      setLikedModels(response.content);
+      setLikedModels(response.content || []);
     } catch (error) {
       console.error('Failed to load liked models:', error);
+      setLikedModels([]);
     }
   };
 
   const loadGenerationHistory = async () => {
     try {
       const response = await generateAPI.getGenerationHistory(0, 50);
-      setGenerationHistory(response.content);
+      setGenerationHistory(response.content || []);
     } catch (error) {
       console.error('Failed to load generation history:', error);
+      setGenerationHistory([]);
     }
   };
 
   const loadTrainingHistory = async () => {
     try {
       const response = await trainingAPI.getTrainingHistory();
-      setTrainingHistory(response);
+      setTrainingHistory(response || []);
     } catch (error) {
       console.error('Failed to load training history:', error);
+      setTrainingHistory([]);
     }
   };
 
@@ -112,26 +119,12 @@ export default function ProfileScreen() {
     navigation.navigate('Login');
   };
 
-  // 로그인하지 않은 경우
-  if (!isAuthenticated) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.notLoggedIn}>
-          <Ionicons name="person-circle-outline" size={80} color="#828282" />
-          <Text style={styles.notLoggedInTitle}>Login Required</Text>
-          <Text style={styles.notLoggedInText}>
-            Please login to view your profile and manage your models.
-          </Text>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  const { isDark } = useTheme();
+  const bgColor = isDark ? Colors.bgDark : '#FFFFFF';
+  const textColor = isDark ? Colors.textPrimary : '#000';
 
-  return (
-    <ScrollView style={styles.container}>
+  const renderListHeader = () => (
+    <>
       {/* 프로필 헤더 */}
       <View style={styles.header}>
         <View style={styles.avatar}>
@@ -151,22 +144,24 @@ export default function ProfileScreen() {
       </View>
 
       {/* 통계 */}
-      <View style={styles.stats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{myModels.length}</Text>
-          <Text style={styles.statLabel}>Models</Text>
+      {!loading && (
+        <View style={styles.stats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{myModels?.length || 0}</Text>
+            <Text style={styles.statLabel}>Models</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{likedModels?.length || 0}</Text>
+            <Text style={styles.statLabel}>Favorites</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{generationHistory?.length || 0}</Text>
+            <Text style={styles.statLabel}>Generations</Text>
+          </View>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{likedModels.length}</Text>
-          <Text style={styles.statLabel}>Favorites</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{generationHistory.length}</Text>
-          <Text style={styles.statLabel}>Generations</Text>
-        </View>
-      </View>
+      )}
 
       {/* 탭 */}
       <View style={styles.tabsContainer}>
@@ -203,164 +198,186 @@ export default function ProfileScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      {loading && <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />}
+    </>
+  );
 
-      {/* 탭 컨텐츠 */}
-      <View style={styles.tabContent}>
-        {loading ? (
-          <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
-        ) : (
-          <>
-            {/* My Models Tab */}
-            {activeTab === 'models' && (
-              <View style={styles.section}>
-                {myModels.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="cube-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.emptyText}>No models yet</Text>
-                    <Text style={styles.emptyHint}>Train your first model to get started</Text>
-                  </View>
-                ) : (
-                  <View style={styles.modelsGrid}>
-                    {myModels.map((model) => (
-                      <View key={model.id} style={styles.modelItem}>
-                        <ModelCard model={model} onPress={() => handleModelPress(model.id)} />
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
+  const renderEmptyComponent = () => {
+    if (loading) return null;
+    
+    switch (activeTab) {
+      case 'models':
+        return (
+          <View style={styles.emptyState}>
+            <Ionicons name="cube-outline" size={64} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No models yet</Text>
+            <Text style={styles.emptyHint}>Train your first model to get started</Text>
+          </View>
+        );
+      case 'favorites':
+        return (
+          <View style={styles.emptyState}>
+            <Ionicons name="heart-outline" size={64} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No favorites yet</Text>
+            <Text style={styles.emptyHint}>Like models to see them here</Text>
+          </View>
+        );
+      case 'generation':
+        return (
+          <View style={styles.emptyState}>
+            <Ionicons name="images-outline" size={64} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No generation history</Text>
+            <Text style={styles.emptyHint}>Generate images to see them here</Text>
+          </View>
+        );
+      case 'training':
+        return (
+          <View style={styles.emptyState}>
+            <Ionicons name="construct-outline" size={64} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No training history</Text>
+            <Text style={styles.emptyHint}>Train models to see them here</Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
 
-            {/* Favorites Tab */}
-            {activeTab === 'favorites' && (
-              <View style={styles.section}>
-                {likedModels.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="heart-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.emptyText}>No favorites yet</Text>
-                    <Text style={styles.emptyHint}>Like models to see them here</Text>
-                  </View>
-                ) : (
-                  <View style={styles.modelsGrid}>
-                    {likedModels.map((model) => (
-                      <View key={model.id} style={styles.modelItem}>
-                        <ModelCard model={model} onPress={() => handleModelPress(model.id)} />
-                      </View>
-                    ))}
-                  </View>
-                )}
+  const renderItem = ({ item }: { item: any }) => {
+    switch (activeTab) {
+      case 'models':
+      case 'favorites':
+        return (
+          <View style={styles.modelItem}>
+            <ModelCard model={item} onPress={() => handleModelPress(item.id)} />
+          </View>
+        );
+      case 'generation':
+        return (
+          <View style={styles.historyCard}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>{item.modelTitle}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  item.status === 'SUCCESS' && styles.statusSuccess,
+                  item.status === 'GENERATING' && styles.statusGenerating,
+                  item.status === 'FAILED' && styles.statusFailed,
+                ]}
+              >
+                <Text style={styles.statusText}>{item.status}</Text>
               </View>
+            </View>
+            <Text style={styles.historyPrompt} numberOfLines={2}>
+              {item.prompt}
+            </Text>
+            <Text style={styles.historyDate}>
+              {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+            {item.generatedImages.length > 0 && (
+              <ScrollView horizontal style={styles.historyImages}>
+                {item.generatedImages.map((img: any) => (
+                  <Image
+                    key={img.id}
+                    source={{ uri: img.s3Url }}
+                    style={styles.historyImage}
+                  />
+                ))}
+              </ScrollView>
             )}
+          </View>
+        );
+      case 'training':
+        return (
+          <View style={styles.historyCard}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>{item.modelName}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  item.status === 'COMPLETED' && styles.statusSuccess,
+                  item.status === 'TRAINING' && styles.statusGenerating,
+                  item.status === 'FAILED' && styles.statusFailed,
+                ]}
+              >
+                <Text style={styles.statusText}>{item.status}</Text>
+              </View>
+            </View>
+            {item.modelDescription && (
+              <Text style={styles.historyPrompt} numberOfLines={2}>
+                {item.modelDescription}
+              </Text>
+            )}
+            <View style={styles.trainingStats}>
+              <Text style={styles.trainingStat}>
+                Epochs: {item.currentEpoch}/{item.totalEpochs}
+              </Text>
+              <Text style={styles.trainingStat}>
+                Images: {item.trainingImagesCount}
+              </Text>
+            </View>
+            <Text style={styles.historyDate}>
+              {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+  
+  const dataForTab = {
+    models: myModels,
+    favorites: likedModels,
+    generation: generationHistory,
+    training: trainingHistory,
+  };
 
-            {/* Generation History Tab */}
-            {activeTab === 'generation' && (
-              <View style={styles.section}>
-                {generationHistory.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="images-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.emptyText}>No generation history</Text>
-                    <Text style={styles.emptyHint}>Generate images to see them here</Text>
-                  </View>
-                ) : (
-                  <View style={styles.historyGrid}>
-                    {generationHistory.map((history) => (
-                      <View key={history.id} style={styles.historyCard}>
-                        <View style={styles.historyHeader}>
-                          <Text style={styles.historyTitle}>{history.modelTitle}</Text>
-                          <View
-                            style={[
-                              styles.statusBadge,
-                              history.status === 'SUCCESS' && styles.statusSuccess,
-                              history.status === 'GENERATING' && styles.statusGenerating,
-                              history.status === 'FAILED' && styles.statusFailed,
-                            ]}
-                          >
-                            <Text style={styles.statusText}>{history.status}</Text>
-                          </View>
-                        </View>
-                        <Text style={styles.historyPrompt} numberOfLines={2}>
-                          {history.prompt}
-                        </Text>
-                        <Text style={styles.historyDate}>
-                          {new Date(history.createdAt).toLocaleDateString()}
-                        </Text>
-                        {history.generatedImages.length > 0 && (
-                          <ScrollView horizontal style={styles.historyImages}>
-                            {history.generatedImages.map((img) => (
-                              <Image
-                                key={img.id}
-                                source={{ uri: img.s3Url }}
-                                style={styles.historyImage}
-                              />
-                            ))}
-                          </ScrollView>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
+  // 로그인하지 않은 경우
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+        <TopNavigation showSearch={false} showProfile={false} />
+        <View style={[styles.container, { backgroundColor: bgColor }]}>
+          <View style={styles.notLoggedIn}>
+            <Ionicons name="person-circle-outline" size={80} color="#828282" />
+            <Text style={[styles.notLoggedInTitle, { color: textColor }]}>Login Required</Text>
+            <Text style={styles.notLoggedInText}>
+              Please login to view your profile and manage your models.
+            </Text>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-            {/* Training History Tab */}
-            {activeTab === 'training' && (
-              <View style={styles.section}>
-                {trainingHistory.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="construct-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.emptyText}>No training history</Text>
-                    <Text style={styles.emptyHint}>Train models to see them here</Text>
-                  </View>
-                ) : (
-                  <View style={styles.historyGrid}>
-                    {trainingHistory.map((job) => (
-                      <View key={job.id} style={styles.historyCard}>
-                        <View style={styles.historyHeader}>
-                          <Text style={styles.historyTitle}>{job.modelName}</Text>
-                          <View
-                            style={[
-                              styles.statusBadge,
-                              job.status === 'COMPLETED' && styles.statusSuccess,
-                              job.status === 'TRAINING' && styles.statusGenerating,
-                              job.status === 'FAILED' && styles.statusFailed,
-                            ]}
-                          >
-                            <Text style={styles.statusText}>{job.status}</Text>
-                          </View>
-                        </View>
-                        {job.modelDescription && (
-                          <Text style={styles.historyPrompt} numberOfLines={2}>
-                            {job.modelDescription}
-                          </Text>
-                        )}
-                        <View style={styles.trainingStats}>
-                          <Text style={styles.trainingStat}>
-                            Epochs: {job.currentEpoch}/{job.totalEpochs}
-                          </Text>
-                          <Text style={styles.trainingStat}>
-                            Images: {job.trainingImagesCount}
-                          </Text>
-                        </View>
-                        <Text style={styles.historyDate}>
-                          {new Date(job.createdAt).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-          </>
-        )}
-      </View>
-    </ScrollView>
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+      <TopNavigation showSearch={false} showProfile={false} />
+      <FlatList
+        data={loading ? [] : dataForTab[activeTab]}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={activeTab === 'models' || activeTab === 'favorites' ? 2 : 1}
+        key={activeTab === 'models' || activeTab === 'favorites' ? 'two-columns' : 'one-column'}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={activeTab === 'models' || activeTab === 'favorites' ? styles.modelRow : undefined}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: Colors.bgDark,
+  },
+  listContent: {
+    paddingBottom: Spacing.lg,
   },
   header: {
     padding: Spacing.xl,
@@ -480,13 +497,13 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
   },
-  modelsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
+  modelList: {},
+  modelRow: {
+    justifyContent: 'space-between',
   },
   modelItem: {
     width: '48%',
+    marginBottom: Spacing.md,
   },
   historyGrid: {
     gap: Spacing.md,

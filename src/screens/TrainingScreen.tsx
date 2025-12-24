@@ -11,12 +11,15 @@ import {
   Image,
   ActivityIndicator,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Slider from '@react-native-community/slider';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import TopNavigation from '../components/TopNavigation';
 import { trainingAPI, uploadAPI } from '../services/api';
 import type { TrainConfig } from '../types';
 
@@ -282,22 +285,27 @@ export default function TrainingScreen() {
     }
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      {/* Hero Section */}
-      <View style={styles.heroSection}>
-        <View style={styles.animationContainer}>
-          <View style={styles.shape1} />
-          <View style={styles.shape2} />
-          <View style={styles.shape3} />
-        </View>
+  const { isDark } = useTheme();
+  const bgColor = isDark ? Colors.bgDark : '#FFFFFF';
 
-        <Text style={styles.heroTitle}>Craft Your AI Masterpiece</Text>
-        <Text style={styles.heroSubtitle}>
-          Bring your vision to life by training a custom LoRA model.{'\n'}
-          Just upload your images, and we'll handle the rest.
-        </Text>
-      </View>
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+      <TopNavigation showSearch={false} />
+      <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.animationContainer}>
+            <View style={styles.shape1} />
+            <View style={styles.shape2} />
+            <View style={styles.shape3} />
+          </View>
+
+          <Text style={styles.heroTitle}>Craft Your AI Masterpiece</Text>
+          <Text style={styles.heroSubtitle}>
+            Bring your vision to life by training a custom LoRA model.{'\n'}
+            Just upload your images, and we'll handle the rest.
+          </Text>
+        </View>
 
       {/* Training Form Card */}
       <View style={styles.formContainer}>
@@ -545,14 +553,17 @@ export default function TrainingScreen() {
           )}
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.bgDark,
   },
   heroSection: {
     paddingVertical: 60,
