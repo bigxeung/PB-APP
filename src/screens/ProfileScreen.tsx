@@ -703,4 +703,56 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: '500',
   },
+  generationCard: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+    padding: 12,
+  },
+  generationThumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  generationImage: {
+    width: '100%',
+    height: '100%',
+  },
+  generationInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  generationModelTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  generationPrompt: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  generationFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  generationDate: {
+    fontSize: 12,
+  },
+  generationStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  generationStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
 });
