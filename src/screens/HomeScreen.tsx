@@ -101,9 +101,9 @@ export default function HomeScreen() {
 
       let response;
 
-      // 태그가 선택된 경우 필터 API 사용
+      // 태그가 선택된 경우 필터 API 사용 (popular/recent 정렬 함께 적용)
       if (selectedTags.length > 0) {
-        response = await modelsAPI.filterByTags(selectedTags, currentPage, 20);
+        response = await modelsAPI.filterByTags(selectedTags, currentPage, 20, tab);
       } else {
         // 태그가 없는 경우 기존 로직 (popular/recent에 따라)
         response = tab === 'popular'
