@@ -136,12 +136,12 @@ export default function ProfileScreen() {
   const renderListHeader = () => (
     <>
       {/* 프로필 헤더 */}
-      <View style={styles.header}>
-        <View style={styles.avatar}>
+      <View style={[styles.header, { borderBottomColor: borderColor }]}>
+        <View style={[styles.avatar, { backgroundColor: cardBgColor }]}>
           {user?.profileImageUrl ? (
             <Image source={{ uri: user.profileImageUrl }} style={styles.avatarImage} />
           ) : (
-            <Ionicons name="person" size={40} color={Colors.textMuted} />
+            <Ionicons name="person" size={40} color={mutedTextColor} />
           )}
         </View>
         <Text style={[styles.nickname, { color: textColor }]}>{user?.nickname || 'User'}</Text>
@@ -155,7 +155,7 @@ export default function ProfileScreen() {
 
       {/* 통계 */}
       {!loading && (
-        <View style={styles.stats}>
+        <View style={[styles.stats, { borderBottomColor: borderColor }]}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: textColor }]}>{myModels?.length || 0}</Text>
             <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Models</Text>
@@ -174,12 +174,12 @@ export default function ProfileScreen() {
       )}
 
       {/* 탭 */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { borderBottomColor: borderColor }]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'models' && styles.tabActive]}
           onPress={() => setActiveTab('models')}
         >
-          <Text style={[styles.tabText, activeTab === 'models' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: secondaryTextColor }, activeTab === 'models' && styles.tabTextActive]}>
             My Models
           </Text>
         </TouchableOpacity>
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
           style={[styles.tab, activeTab === 'favorites' && styles.tabActive]}
           onPress={() => setActiveTab('favorites')}
         >
-          <Text style={[styles.tabText, activeTab === 'favorites' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: secondaryTextColor }, activeTab === 'favorites' && styles.tabTextActive]}>
             Favorites
           </Text>
         </TouchableOpacity>
@@ -195,7 +195,7 @@ export default function ProfileScreen() {
           style={[styles.tab, activeTab === 'generation' && styles.tabActive]}
           onPress={() => setActiveTab('generation')}
         >
-          <Text style={[styles.tabText, activeTab === 'generation' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: secondaryTextColor }, activeTab === 'generation' && styles.tabTextActive]}>
             Generation
           </Text>
         </TouchableOpacity>
@@ -203,7 +203,7 @@ export default function ProfileScreen() {
           style={[styles.tab, activeTab === 'training' && styles.tabActive]}
           onPress={() => setActiveTab('training')}
         >
-          <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: secondaryTextColor }, activeTab === 'training' && styles.tabTextActive]}>
             Training
           </Text>
         </TouchableOpacity>
@@ -424,13 +424,11 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.bgCard,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
@@ -443,12 +441,10 @@ const styles = StyleSheet.create({
   nickname: {
     fontSize: FontSizes.xl,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
   email: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     marginBottom: Spacing.lg,
   },
   logoutButton: {
@@ -470,30 +466,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   statItem: {
     alignItems: 'center',
   },
   statDivider: {
     width: 1,
-    backgroundColor: Colors.border,
   },
   statValue: {
     fontSize: FontSizes['2xl'],
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
   statLabel: {
     fontSize: FontSizes.xs,
-    color: Colors.textSecondary,
     textTransform: 'uppercase',
   },
   tabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 2,
-    borderBottomColor: Colors.border,
   },
   tab: {
     flex: 1,
@@ -508,7 +499,6 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
   tabTextActive: {
@@ -531,12 +521,10 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: Spacing.md,
     fontSize: FontSizes.base,
-    color: Colors.textSecondary,
   },
   emptyHint: {
     marginTop: Spacing.sm,
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
   },
   modelList: {},
   modelRow: {
@@ -551,10 +539,8 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   historyCard: {
-    backgroundColor: Colors.bgCard,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
     marginBottom: Spacing.md,
     marginHorizontal: 16,
     overflow: 'hidden',
@@ -568,7 +554,6 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: FontSizes.base,
     fontWeight: '600',
-    color: Colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
@@ -594,12 +579,10 @@ const styles = StyleSheet.create({
   },
   historyPrompt: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     marginBottom: Spacing.sm,
   },
   historyDate: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
     marginTop: Spacing.sm,
   },
   generationImageContainer: {
@@ -610,7 +593,6 @@ const styles = StyleSheet.create({
   generationMainImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: Colors.bgHover,
   },
   imageCountBadge: {
     position: 'absolute',
@@ -643,7 +625,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: Radius.md,
     marginRight: Spacing.sm,
-    backgroundColor: Colors.bgHover,
   },
   trainingStats: {
     flexDirection: 'row',
@@ -652,7 +633,6 @@ const styles = StyleSheet.create({
   },
   trainingStat: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
   },
   notLoggedIn: {
     flex: 1,
@@ -663,13 +643,11 @@ const styles = StyleSheet.create({
   notLoggedInTitle: {
     fontSize: FontSizes['3xl'],
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginTop: Spacing.xl,
     marginBottom: Spacing.md,
   },
   notLoggedInText: {
     fontSize: FontSizes.base,
-    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl * 2,
     lineHeight: 24,

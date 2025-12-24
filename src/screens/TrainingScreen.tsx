@@ -301,7 +301,7 @@ export default function TrainingScreen() {
       <TopNavigation showSearch={false} />
       <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
         {/* Hero Section */}
-        <View style={styles.heroSection}>
+        <View style={[styles.heroSection, { backgroundColor: bgColor }]}>
           <View style={styles.animationContainer}>
             <View style={styles.shape1} />
             <View style={styles.shape2} />
@@ -485,11 +485,11 @@ export default function TrainingScreen() {
 
             {selectedImages.length === 0 ? (
               <TouchableOpacity
-                style={styles.uploadBox}
+                style={[styles.uploadBox, { backgroundColor: cardBgColor, borderColor }]}
                 onPress={handlePickImages}
                 disabled={isTraining || isUploading}
               >
-                <Ionicons name="cloud-upload-outline" size={48} color={Colors.textMuted} />
+                <Ionicons name="cloud-upload-outline" size={48} color={mutedTextColor} />
                 <Text style={[styles.uploadText, { color: secondaryTextColor }]}>Tap to upload images</Text>
                 <Text style={[styles.uploadHint, { color: mutedTextColor }]}>10-40 images required (JPG, PNG, WebP)</Text>
               </TouchableOpacity>
@@ -502,10 +502,10 @@ export default function TrainingScreen() {
                 >
                   {selectedImages.map((image, index) => (
                     <View key={index} style={styles.imagePreviewContainer}>
-                      <Image source={{ uri: image.uri }} style={styles.imagePreview} />
+                      <Image source={{ uri: image.uri }} style={[styles.imagePreview, { backgroundColor: cardBgColor }]} />
                       {!isTraining && !isUploading && (
                         <TouchableOpacity
-                          style={styles.removeImageButton}
+                          style={[styles.removeImageButton, { backgroundColor: cardBgColor }]}
                           onPress={() => handleRemoveImage(index)}
                         >
                           <Ionicons name="close-circle" size={24} color={Colors.error} />
@@ -516,7 +516,7 @@ export default function TrainingScreen() {
 
                   {selectedImages.length < 40 && !isTraining && !isUploading && (
                     <TouchableOpacity
-                      style={styles.addMoreButton}
+                      style={[styles.addMoreButton, { borderColor, backgroundColor: cardBgColor }]}
                       onPress={handlePickImages}
                     >
                       <Ionicons name="add-circle-outline" size={48} color={Colors.primary} />
@@ -530,7 +530,7 @@ export default function TrainingScreen() {
                     <Text style={styles.uploadProgressText}>
                       Uploading images... {Math.round(uploadProgress)}%
                     </Text>
-                    <View style={styles.progressBar}>
+                    <View style={[styles.progressBar, { backgroundColor: cardBgColor }]}>
                       <View
                         style={[styles.progressFill, { width: `${uploadProgress}%` }]}
                       />
@@ -587,7 +587,7 @@ export default function TrainingScreen() {
                     </Text>
                   </View>
 
-                  <View style={styles.progressBar}>
+                  <View style={[styles.progressBar, { backgroundColor: cardBgColor }]}>
                     <View
                       style={[
                         styles.progressFill,
@@ -608,7 +608,7 @@ export default function TrainingScreen() {
               )}
             </View>
           ) : (
-            <View style={styles.noTrainingMessage}>
+            <View style={[styles.noTrainingMessage, { backgroundColor: cardBgColor, borderColor }]}>
               <Text style={[styles.noTrainingText, { color: mutedTextColor }]}>
                 Training has not started yet. Upload images and start training to see progress.
               </Text>
@@ -633,7 +633,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: Colors.bgDark,
   },
   animationContainer: {
     position: 'absolute',
@@ -673,7 +672,6 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -681,7 +679,6 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     fontSize: 16,
-    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 20,
@@ -694,17 +691,14 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
   },
   card: {
-    backgroundColor: Colors.bgCard,
     borderRadius: Radius.lg,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
     ...Shadows.md,
   },
   cardTitle: {
     fontSize: FontSizes['2xl'],
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: Spacing.lg,
   },
   formGroup: {
@@ -712,18 +706,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     fontWeight: '500',
     marginBottom: Spacing.sm,
   },
   input: {
-    backgroundColor: Colors.bgHover,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: Radius.md,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    color: Colors.textPrimary,
     fontSize: FontSizes.base,
   },
   textArea: {
@@ -770,9 +760,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   uploadBox: {
-    backgroundColor: Colors.bgHover,
     borderWidth: 2,
-    borderColor: Colors.border,
     borderStyle: 'dashed',
     borderRadius: Radius.lg,
     paddingVertical: 40,
@@ -782,13 +770,11 @@ const styles = StyleSheet.create({
   },
   uploadText: {
     fontSize: FontSizes.base,
-    color: Colors.textSecondary,
     marginTop: Spacing.md,
     fontWeight: '500',
   },
   uploadHint: {
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   startButton: {
@@ -846,7 +832,6 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     fontWeight: '600',
   },
   progressValue: {
@@ -857,13 +842,12 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '100%',
     height: 8,
-    backgroundColor: Colors.bgHover,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.primary,
     borderRadius: Radius.full,
   },
   progressFooter: {
@@ -873,23 +857,18 @@ const styles = StyleSheet.create({
   },
   progressPercentage: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
   },
   progressRemaining: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
   },
   noTrainingMessage: {
-    backgroundColor: Colors.bgHover,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: Radius.md,
     padding: Spacing.lg,
     marginTop: Spacing.md,
   },
   noTrainingText: {
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
     textAlign: 'center',
   },
   slider: {
@@ -904,7 +883,6 @@ const styles = StyleSheet.create({
   },
   rangeLabel: {
     fontSize: 12,
-    color: Colors.textMuted,
   },
   labelRow: {
     flexDirection: 'row',
@@ -929,13 +907,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: Radius.md,
-    backgroundColor: Colors.bgHover,
   },
   removeImageButton: {
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: Colors.bgCard,
     borderRadius: 12,
   },
   addMoreButton: {
@@ -943,9 +919,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radius.md,
     borderWidth: 2,
-    borderColor: Colors.border,
     borderStyle: 'dashed',
-    backgroundColor: Colors.bgHover,
     alignItems: 'center',
     justifyContent: 'center',
   },
