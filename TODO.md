@@ -33,8 +33,8 @@
 - [x] 이미지 생성 API 연동
 - [x] 진행률 폴링 (Polling 방식으로 구현, SSE 대신)
 - [x] 생성된 이미지 표시
-- [ ] 이미지 다운로드 기능 (선택사항)
-- [ ] 예시 프롬프트 복사 기능 (선택사항)
+- [x] 이미지 다운로드 기능 (expo-file-system, expo-media-library 사용)
+- [x] 예시 프롬프트 복사 기능 (expo-clipboard 사용)
 - [x] 슬라이더 컴포넌트 추가 (Steps, Guidance Scale, LoRA Weight, Images)
 
 #### ~~2. TrainingScreen 완성~~ ✅
@@ -166,6 +166,12 @@
 ---
 
 ## 📅 업데이트 로그
+
+- **2024-12-25**: ✨ GenerateModal 추가 기능 완성
+  - **이미지 다운로드 기능**: expo-file-system, expo-media-library를 사용하여 생성된 이미지를 갤러리에 저장
+  - **예시 프롬프트 복사 기능**: expo-clipboard를 사용하여 모델의 예시 프롬프트를 클립보드에 복사
+  - 모델 선택 시 자동으로 모델 상세 정보(prompts 포함) 로드
+  - UI 개선: Example Prompts 섹션 추가, 이미지 다운로드 버튼 추가
 
 - **2024-12-24 (오후)**: 🎉 핵심 기능 완성
   - **GenerateModal 완성**: 모델 선택 모달, API 연동, 슬라이더, 진행률 폴링, 이미지 표시
