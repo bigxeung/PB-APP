@@ -13,6 +13,12 @@
 - [x] GenerateModal 기본 UI 구현
 - [x] Bottom Tab Navigation (Home, Training, Profile)
 - [x] 로그인 선택사항으로 변경
+- [x] **GenerateModal 완성** (모델 선택, API 연동, 슬라이더, 진행률 폴링, 이미지 표시)
+- [x] **TrainingScreen 완성** (이미지 피커, S3 업로드, 학습 API 연동, 진행률 폴링)
+- [x] **ModelDetailScreen** (이미 완성되어 있었음)
+- [x] **ProfileScreen 완성** (4개 탭, 통계, 히스토리 표시)
+- [x] API 서비스 완성 (generateAPI, trainingAPI, uploadAPI, communityAPI, promptsAPI)
+- [x] TypeScript 타입 정의 (Generation, Training, Upload, Comment, Prompt)
 
 ---
 
@@ -20,43 +26,42 @@
 
 ### 🔴 높은 우선순위 (High Priority)
 
-#### 1. GenerateModal 완성
-- [ ] 모델 선택 Picker/Modal 구현
-- [ ] 내 모델 목록 불러오기 API 연동
-- [ ] 커뮤니티 모델 목록 불러오기 API 연동
-- [ ] 이미지 생성 API 연동
-- [ ] SSE (Server-Sent Events) 진행률 구독
-- [ ] 생성된 이미지 표시
-- [ ] 이미지 다운로드 기능
-- [ ] 예시 프롬프트 복사 기능
-- [ ] 슬라이더 컴포넌트 추가 (Steps, Guidance Scale, LoRA Weight)
+#### ~~1. GenerateModal 완성~~ ✅
+- [x] 모델 선택 Picker/Modal 구현
+- [x] 내 모델 목록 불러오기 API 연동
+- [x] 커뮤니티 모델 목록 불러오기 API 연동
+- [x] 이미지 생성 API 연동
+- [x] 진행률 폴링 (Polling 방식으로 구현, SSE 대신)
+- [x] 생성된 이미지 표시
+- [ ] 이미지 다운로드 기능 (선택사항)
+- [ ] 예시 프롬프트 복사 기능 (선택사항)
+- [x] 슬라이더 컴포넌트 추가 (Steps, Guidance Scale, LoRA Weight, Images)
 
-#### 2. TrainingScreen 완성
-- [ ] 이미지 선택/업로드 UI 구현
-  - [ ] 이미지 피커 (expo-image-picker)
-  - [ ] 드래그 앤 드롭 (모바일에서는 미지원이므로 대체 UI)
-  - [ ] 이미지 미리보기 그리드
-  - [ ] 개별 이미지 삭제 기능
-- [ ] S3 Presigned URL 받아오기 API 연동
-- [ ] S3에 이미지 업로드
-- [ ] 학습 시작 API 연동
-- [ ] WebSocket 진행률 구독
-- [ ] 학습 상태 실시간 업데이트
-- [ ] 추천 Epochs 자동 계산 로직
-- [ ] 슬라이더 컴포넌트 추가 (Learning Rate)
+#### ~~2. TrainingScreen 완성~~ ✅
+- [x] 이미지 선택/업로드 UI 구현
+- [x] 이미지 피커 (expo-image-picker)
+- [x] 이미지 미리보기 그리드 (가로 스크롤)
+- [x] 개별 이미지 삭제 기능
+- [x] S3 Presigned URL 받아오기 API 연동
+- [x] S3에 이미지 업로드 (진행률 표시)
+- [x] 학습 시작 API 연동
+- [x] 진행률 폴링 (Polling 방식으로 구현, WebSocket 대신)
+- [x] 학습 상태 실시간 업데이트
+- [x] 추천 Epochs 자동 계산 로직
+- [x] 슬라이더 컴포넌트 추가 (Learning Rate, Epochs, LoRA Rank)
 
-#### 3. ModelDetailScreen 구현
-- [ ] conference(front)/src/views/ModelList.vue의 ModelDetailModal 참고
-- [ ] 모델 상세 정보 표시
-  - [ ] 썸네일 이미지
-  - [ ] 제목, 설명
-  - [ ] 작성자 정보
-  - [ ] 샘플 이미지 갤러리
-  - [ ] 태그 목록
-  - [ ] 통계 (좋아요, 조회수, 즐겨찾기)
-- [ ] 좋아요/즐겨찾기 기능
-- [ ] Generate 버튼 → GenerateModal 열기
-- [ ] 모델 상세 정보 API 연동
+#### ~~3. ModelDetailScreen 구현~~ ✅
+- [x] conference(front)/src/views/ModelList.vue의 ModelDetailModal 참고
+- [x] 모델 상세 정보 표시
+- [x] 썸네일 이미지
+- [x] 제목, 설명
+- [x] 작성자 정보
+- [x] 샘플 이미지 갤러리
+- [x] 태그 목록
+- [x] 통계 (좋아요, 조회수, 즐겨찾기)
+- [x] 좋아요/즐겨찾기 기능
+- [x] Generate 버튼 → GenerateModal 열기
+- [x] 모델 상세 정보 API 연동
 
 ### 🟡 중간 우선순위 (Medium Priority)
 

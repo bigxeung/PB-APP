@@ -11,6 +11,7 @@ import {
   Animated,
   Dimensions,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -38,11 +39,14 @@ export default function HomeScreen() {
   const [tab, setTab] = useState<'popular' | 'recent'>('popular');
   const [searchQuery, setSearchQuery] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const heroAnimation = useRef(new Animated.Value(0)).current;
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    setPage(0);
+    setHasMore(true);
     loadModels(true);
   }, [tab]);
 
@@ -64,10 +68,14 @@ export default function HomeScreen() {
   }, []);
 
   const loadModels = async (refresh = false) => {
-    if (loading || (!hasMore && !refresh)) return;
+    if (loading || (!hasMore && !refresh)) {
+      console.log('⏭️ Skipping loadModels:', { loading, hasMore, refresh });
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(null);
       const currentPage = refresh ? 0 : page;
 
       const response = tab === 'popular'
@@ -82,8 +90,26 @@ export default function HomeScreen() {
 
       setPage(currentPage + 1);
       setHasMore(currentPage < response.totalPages - 1);
-    } catch (error) {
-      console.error('Failed to load models:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to load models:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config?.url,
+      });
+
+      const errorMessage = error.response?.data?.message
+        || error.message
+        || 'Failed to load models';
+
+      setError(errorMessage);
+
+      Alert.alert(
+        'API Error',
+        `${errorMessage}\n\nStatus: ${error.response?.status || 'N/A'}\nURL: ${error.config?.baseURL || 'N/A'}`,
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -251,7 +277,25 @@ export default function HomeScreen() {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No models found</Text>
+            {error ? (
+              <>
+                <Ionicons name="alert-circle" size={48} color="#EF4444" style={{ marginBottom: 12 }} />
+                <Text style={styles.errorText}>Error Loading Models</Text>
+                <Text style={styles.errorDetails}>{error}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => {
+                    setPage(0);
+                    loadModels(true);
+                  }}
+                >
+                  <Ionicons name="refresh" size={20} color="#fff" />
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>No models found</Text>
+            )}
           </View>
         )}
         onEndReached={() => loadModels()}
@@ -446,32 +490,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingBottom: 80,
   },
   row: {
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   footer: {
     paddingVertical: 20,
     alignItems: 'center',
   },
   skeletonContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   skeletonRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   emptyState: {
     paddingVertical: 40,
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   emptyText: {
     color: '#828282',
     fontSize: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  errorDetails: {
+    color: '#828282',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3B82F6',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',

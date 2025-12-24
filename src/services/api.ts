@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL as ENV_API_BASE_URL } from '@env';
 import {
   ApiResponse,
   PageResponse,
@@ -16,7 +17,8 @@ import {
   PromptResponse
 } from '../types';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://blueming-ai-env.eba-gdfew9bx.ap-northeast-2.elasticbeanstalk.com';
+// Fallback URL if env variable is not loaded
+const API_BASE_URL = ENV_API_BASE_URL || 'https://d3ka730j70ocy8.cloudfront.net';
 
 // Axios 인스턴스 생성
 export const apiClient = axios.create({
@@ -26,6 +28,10 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// 디버깅용 로그
+console.log('🌐 API Client initialized with baseURL:', API_BASE_URL);
+console.log('🔍 ENV_API_BASE_URL from @env:', ENV_API_BASE_URL);
 
 // 요청 인터셉터 (토큰 자동 추가)
 apiClient.interceptors.request.use(
@@ -67,8 +73,13 @@ async function apiCall<T>(
 ): Promise<T> {
   try {
     const response = await apiClient({ method, url, data });
-    return response.data;
-  } catch (error) {
+    // API 응답이 { data: {...}, success: true } 구조이므로 response.data.data를 반환
+    return response.data.data || response.data;
+  } catch (error: any) {
+    console.error(`❌ API Error: ${method.toUpperCase()} ${url}`, {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+    });
     throw error;
   }
 }
@@ -97,7 +108,10 @@ export const modelsAPI = {
     apiCall<PageResponse<LoraModel>>('get', `/api/models/my?page=${page}&size=${size}`),
 
   toggleLike: (modelId: number) =>
-    apiCall('post', `/api/models/${modelId}/like`, {}),
+    apiCall<{ isLiked: boolean; likeCount: number }>('post', `/api/models/${modelId}/like`, {}),
+
+  getLikeStatus: (modelId: number) =>
+    apiCall<{ isLiked: boolean }>('get', `/api/models/${modelId}/like/status`),
 };
 
 // User API
@@ -158,22 +172,22 @@ export const uploadAPI = {
 // Community API
 export const communityAPI = {
   toggleFavorite: (modelId: number) =>
-    apiCall('post', `/api/community/models/${modelId}/favorite`, {}),
+    apiCall('post', `/api/models/${modelId}/favorite`, {}),
 
   getLikedModels: (page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<LoraModel>>('get', `/api/community/liked?page=${page}&size=${size}`),
+    apiCall<PageResponse<LoraModel>>('get', `/api/models/likes?page=${page}&size=${size}`),
 
   getComments: (modelId: number, page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<CommentResponse>>('get', `/api/community/models/${modelId}/comments?page=${page}&size=${size}`),
+    apiCall<PageResponse<CommentResponse>>('get', `/api/models/${modelId}/comments?page=${page}&size=${size}`),
 
   createComment: (modelId: number, content: string) =>
-    apiCall<CommentResponse>('post', `/api/community/models/${modelId}/comments`, { content }),
+    apiCall<CommentResponse>('post', `/api/models/${modelId}/comments`, { content }),
 
   deleteComment: (modelId: number, commentId: number) =>
-    apiCall('delete', `/api/community/models/${modelId}/comments/${commentId}`, {}),
+    apiCall('delete', `/api/models/${modelId}/comments/${commentId}`, {}),
 
   toggleCommentLike: (modelId: number, commentId: number) =>
-    apiCall('post', `/api/community/models/${modelId}/comments/${commentId}/like`, {}),
+    apiCall('post', `/api/models/${modelId}/comments/${commentId}/like`, {}),
 };
 
 // Prompts API

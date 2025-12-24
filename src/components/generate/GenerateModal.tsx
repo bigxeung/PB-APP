@@ -221,10 +221,13 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.contentWrapper}>
-              {/* Configuration Section */}
-              <View style={styles.section}>
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={styles.contentWrapper}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Configuration Section */}
+            <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Configuration</Text>
 
                 {/* Model Selection */}
@@ -423,7 +426,6 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
                   </View>
                 )}
               </View>
-            </View>
           </ScrollView>
         </View>
       </View>
@@ -548,7 +550,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgDark,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    maxHeight: '90%',
+    height: '90%',
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -573,10 +575,9 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     padding: Spacing.lg,
-    gap: Spacing.xl,
   },
   section: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   sectionTitle: {
     fontSize: FontSizes.xl,
@@ -750,7 +751,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgDark,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    maxHeight: '80%',
+    height: '80%',
     borderWidth: 1,
     borderColor: Colors.border,
   },
