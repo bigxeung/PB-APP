@@ -87,7 +87,7 @@ async function apiCall<T>(
 // Auth API
 export const authAPI = {
   getCurrentUser: () =>
-    apiCall<UserResponse>('get', '/api/auth/me'),
+    apiCall<UserResponse>('get', '/api/users/me'),
 
   logout: (refreshToken: string) =>
     apiCall('post', '/api/auth/logout', { refreshToken }),
@@ -132,7 +132,7 @@ export const generateAPI = {
     apiCall<GenerationProgressResponse>('get', `/api/generate/progress/${userId}/${historyId}`),
 
   getGenerationHistory: (page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<GenerationHistoryResponse>>('get', `/api/generate/history?page=${page}&size=${size}`),
+    apiCall<PageResponse<GenerationHistoryResponse>>('get', `/api/generate/history/my?page=${page}&size=${size}`),
 };
 
 // Training API
@@ -146,8 +146,8 @@ export const trainingAPI = {
   deleteTrainingJob: (jobId: number) =>
     apiCall('delete', `/api/training/${jobId}`, {}),
 
-  getTrainingHistory: (page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<TrainingJobResponse>>('get', `/api/training/history?page=${page}&size=${size}`),
+  getTrainingHistory: () =>
+    apiCall<TrainingJobResponse[]>('get', '/api/training/my'),
 };
 
 // Upload API

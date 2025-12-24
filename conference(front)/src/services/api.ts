@@ -345,7 +345,7 @@ export const api = {
     },
 
     async getCurrentUser(): Promise<ApiResponse<Record<string, unknown>>> {
-      const response = await authenticatedFetch(`${API_BASE_URL}/api/auth/me`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me`, {
         headers: getAuthHeaders(),
       });
       return handleResponse(response);
