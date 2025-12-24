@@ -41,6 +41,7 @@ export default function TrainingScreen() {
   const [loraRankIndex, setLoraRankIndex] = useState(1); // Default to 32 (index 1)
   const loraRank = loraRankOptions[loraRankIndex];
   const [baseModel, setBaseModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
+  const [showAdvanced, setShowAdvanced] = useState(false); // Advanced 섹션 접기/펼치기
 
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -363,58 +364,113 @@ export default function TrainingScreen() {
             />
           </View>
 
-          {/* Parameters Grid */}
-          <View style={styles.parametersGrid}>
-            {/* Learning Rate */}
-            <View style={styles.parameterItem}>
-              <Text style={[styles.label, { color: secondaryTextColor }]}>Learning Rate: {learningRate.toExponential(1)}</Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0.0001}
-                maximumValue={0.001}
-                step={0.0001}
-                value={learningRate}
-                onValueChange={setLearningRate}
-                minimumTrackTintColor={Colors.primary}
-                maximumTrackTintColor={Colors.border}
-                thumbTintColor={Colors.primary}
-                disabled={isTraining}
+          {/* Advanced Parameters Section */}
+          <View style={styles.formGroup}>
+            <TouchableOpacity
+              style={styles.advancedHeader}
+              onPress={() => setShowAdvanced(!showAdvanced)}
+            >
+              <View style={styles.advancedHeaderLeft}>
+                <Ionicons name="settings-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.advancedTitle, { color: textColor }]}>
+                  Hyperparameters (Advanced)
+                </Text>
+              </View>
+              <Ionicons
+                name={showAdvanced ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={secondaryTextColor}
               />
-            </View>
+            </TouchableOpacity>
 
-            {/* Epochs */}
-            <View style={styles.parameterItem}>
-              <Text style={[styles.label, { color: secondaryTextColor }]}>Epochs: {epochs}</Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={5}
-                maximumValue={50}
-                step={1}
-                value={epochs}
-                onValueChange={setEpochs}
-                minimumTrackTintColor={Colors.primary}
-                maximumTrackTintColor={Colors.border}
-                thumbTintColor={Colors.primary}
-                disabled={isTraining}
-              />
-            </View>
+            {showAdvanced && (
+              <View style={styles.parametersGrid}>
+                {/* Learning Rate */}
+                <View style={styles.parameterItem}>
+                  <View style={styles.parameterHeader}>
+                    <Text style={[styles.label, { color: secondaryTextColor }]}>
+                      Learning Rate
+                    </Text>
+                    <Text style={[styles.parameterValue, { color: textColor }]}>
+                      {learningRate.toExponential(1)}
+                    </Text>
+                  </View>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={0.00002}
+                    maximumValue={0.0002}
+                    step={0.00001}
+                    value={learningRate}
+                    onValueChange={setLearningRate}
+                    minimumTrackTintColor={Colors.primary}
+                    maximumTrackTintColor={Colors.border}
+                    thumbTintColor={Colors.primary}
+                    disabled={isTraining}
+                  />
+                  <View style={styles.rangeLabels}>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>2e-5</Text>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>2e-4</Text>
+                  </View>
+                </View>
 
-            {/* LoRA Rank */}
-            <View style={styles.parameterItem}>
-              <Text style={[styles.label, { color: secondaryTextColor }]}>LoRA Rank: {loraRank}</Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={2}
-                step={1}
-                value={loraRankIndex}
-                onValueChange={(value) => setLoraRankIndex(Math.round(value))}
-                minimumTrackTintColor={Colors.primary}
-                maximumTrackTintColor={Colors.border}
-                thumbTintColor={Colors.primary}
-                disabled={isTraining}
-              />
-            </View>
+                {/* Epochs */}
+                <View style={styles.parameterItem}>
+                  <View style={styles.parameterHeader}>
+                    <Text style={[styles.label, { color: secondaryTextColor }]}>
+                      Epochs
+                    </Text>
+                    <Text style={[styles.parameterValue, { color: textColor }]}>
+                      {epochs}
+                    </Text>
+                  </View>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={5}
+                    maximumValue={250}
+                    step={1}
+                    value={epochs}
+                    onValueChange={setEpochs}
+                    minimumTrackTintColor={Colors.primary}
+                    maximumTrackTintColor={Colors.border}
+                    thumbTintColor={Colors.primary}
+                    disabled={isTraining}
+                  />
+                  <View style={styles.rangeLabels}>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>5</Text>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>250</Text>
+                  </View>
+                </View>
+
+                {/* LoRA Rank */}
+                <View style={styles.parameterItem}>
+                  <View style={styles.parameterHeader}>
+                    <Text style={[styles.label, { color: secondaryTextColor }]}>
+                      LoRA Rank
+                    </Text>
+                    <Text style={[styles.parameterValue, { color: textColor }]}>
+                      {loraRank}
+                    </Text>
+                  </View>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={0}
+                    maximumValue={2}
+                    step={1}
+                    value={loraRankIndex}
+                    onValueChange={(value) => setLoraRankIndex(Math.round(value))}
+                    minimumTrackTintColor={Colors.primary}
+                    maximumTrackTintColor={Colors.border}
+                    thumbTintColor={Colors.primary}
+                    disabled={isTraining}
+                  />
+                  <View style={styles.rangeLabels}>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>16</Text>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>32</Text>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>64</Text>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Image Upload Section */}
