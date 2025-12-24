@@ -70,9 +70,11 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       setCurrentStep(0);
       setTotalSteps(0);
       setStatusMessage('');
+      setExamplePrompt(null);
 
       // Load initial model if initialModelId is provided
       if (initialModelId) {
+        console.log('Loading initial model:', initialModelId);
         loadInitialModel(initialModelId);
       } else {
         setSelectedModel(null);
@@ -88,7 +90,10 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
 
   const loadInitialModel = async (modelId: number) => {
     try {
+      console.log('Fetching model details for:', modelId);
       const modelDetail = await modelsAPI.getModelDetail(modelId);
+      console.log('Model detail loaded:', modelDetail.title, 'Status:', modelDetail.status);
+
       if (modelDetail.status === 'COMPLETED') {
         setSelectedModel(modelDetail);
         // Set example prompt if available
@@ -98,15 +103,19 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
             prompt: firstPrompt.prompt,
             negativePrompt: firstPrompt.negativePrompt,
           });
+          console.log('Example prompt set');
         } else {
           setExamplePrompt(null);
+          console.log('No example prompts available');
         }
       } else {
-        Alert.alert('Error', 'This model is not ready for generation yet');
+        console.warn('Model not ready:', modelDetail.status);
+        Alert.alert('Error', `This model is not ready for generation yet (Status: ${modelDetail.status})`);
       }
     } catch (error: any) {
       console.error('Failed to load initial model:', error);
-      Alert.alert('Error', 'Failed to load model');
+      console.error('Error details:', error.response?.data);
+      Alert.alert('Error', `Failed to load model: ${error.message}`);
     }
   };
 
@@ -121,16 +130,23 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
   const loadModels = async () => {
     setIsLoadingModels(true);
     try {
+      console.log('Loading models...');
       const [myModelsResponse, communityModelsResponse] = await Promise.all([
         modelsAPI.getMyModels(0, 50),
         modelsAPI.getPublicModels(0, 50),
       ]);
 
       // Filter only COMPLETED models
-      setMyModels(myModelsResponse.content.filter(m => m.status === 'COMPLETED'));
-      setCommunityModels(communityModelsResponse.content.filter(m => m.status === 'COMPLETED'));
+      const completedMyModels = myModelsResponse.content.filter(m => m.status === 'COMPLETED');
+      const completedCommunityModels = communityModelsResponse.content.filter(m => m.status === 'COMPLETED');
+
+      setMyModels(completedMyModels);
+      setCommunityModels(completedCommunityModels);
+
+      console.log(`Loaded ${completedMyModels.length} my models, ${completedCommunityModels.length} community models`);
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to load models');
+      console.error('Failed to load models:', error);
+      Alert.alert('Error', `Failed to load models: ${error.message}`);
     } finally {
       setIsLoadingModels(false);
     }
@@ -1010,7 +1026,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgDark,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    height: '80%',
+    maxHeight: '85%',
+    minHeight: '60%',
     borderWidth: 1,
     borderColor: Colors.border,
   },
