@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [tags, setTags] = useState<TagResponse[]>([]);
 
@@ -56,7 +56,7 @@ export default function HomeScreen() {
     setPage(0);
     setHasMore(true);
     loadModels(true);
-  }, [tab, selectedTag]);
+  }, [tab, selectedTags]);
 
   useEffect(() => {
     loadTags();
@@ -102,10 +102,10 @@ export default function HomeScreen() {
       let response;
 
       // 태그가 선택된 경우 필터 API 사용
-      if (selectedTag) {
-        response = await modelsAPI.filterByTags([selectedTag], currentPage, 20);
+      if (selectedTags.length > 0) {
+        response = await modelsAPI.filterByTags(selectedTags, currentPage, 20);
       } else {
-        // 태그가 없는 경우 기존 로직
+        // 태그가 없는 경우 기존 로직 (popular/recent에 따라)
         response = tab === 'popular'
           ? await modelsAPI.getPopularModels(currentPage, 20)
           : await modelsAPI.getPublicModels(currentPage, 20);
@@ -197,8 +197,16 @@ export default function HomeScreen() {
     }
   };
 
-  const handleTagSelect = (tagName: string | null) => {
-    setSelectedTag(tagName);
+  const handleTagSelect = (tagName: string) => {
+    setSelectedTags(prev => {
+      if (prev.includes(tagName)) {
+        // 이미 선택된 태그면 제거
+        return prev.filter(t => t !== tagName);
+      } else {
+        // 새로운 태그 추가
+        return [...prev, tagName];
+      }
+    });
   };
 
   const renderHeroSection = () => (
@@ -308,52 +316,33 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tagFilterContent}
         >
-          <TouchableOpacity
-            key="all"
-            style={[
-              styles.tagChip,
-              {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-              },
-              selectedTag === null && styles.tagChipActive,
-            ]}
-            onPress={() => handleTagSelect(null)}
-          >
-            <Text
-              style={[
-                styles.tagChipText,
-                !isDark && selectedTag !== null && { color: '#666' },
-                selectedTag === null && styles.tagChipTextActive,
-              ]}
-            >
-              All
-            </Text>
-          </TouchableOpacity>
-          {tags.map((tag) => (
-            <TouchableOpacity
-              key={tag.id}
-              style={[
-                styles.tagChip,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                },
-                selectedTag === tag.name && styles.tagChipActive,
-              ]}
-              onPress={() => handleTagSelect(tag.name)}
-            >
-              <Text
+          {tags.map((tag) => {
+            const isSelected = selectedTags.includes(tag.name);
+            return (
+              <TouchableOpacity
+                key={tag.id}
                 style={[
-                  styles.tagChipText,
-                  !isDark && selectedTag !== tag.name && { color: '#666' },
-                  selectedTag === tag.name && styles.tagChipTextActive,
+                  styles.tagChip,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                  },
+                  isSelected && styles.tagChipActive,
                 ]}
+                onPress={() => handleTagSelect(tag.name)}
               >
-                {tag.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.tagChipText,
+                    !isDark && !isSelected && { color: '#666' },
+                    isSelected && styles.tagChipTextActive,
+                  ]}
+                >
+                  {tag.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
     );
@@ -633,24 +622,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   list: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     paddingBottom: 80,
   },
   row: {
-    gap: 8,
-    marginBottom: 8,
+    gap: 16,
+    marginBottom: 16,
   },
   footer: {
     paddingVertical: 20,
     alignItems: 'center',
   },
   skeletonContainer: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
   },
   skeletonRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    gap: 16,
+    marginBottom: 16,
   },
   emptyState: {
     paddingVertical: 40,
