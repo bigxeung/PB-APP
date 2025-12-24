@@ -92,8 +92,8 @@
 - [x] Select modal 창이 내려가 있는 문제 (maxHeight/minHeight로 수정)
 - [x] training 창 프론트 처럼 advanced는 접히도록 수정 (아코디언 구현)
 - [x] training view learning rate / epochs 범위 조정 (2e-5~2e-4, 5~250)
-- [ ] prpfile 밑 컴포넌트 여백 문제
-- [ ] generate histpry 모델 카드 뷰처럼 수정
+- [x] profile 밑 컴포넌트 여백 문제 (marginHorizontal: 16)
+- [x] generate history 모델 카드 뷰처럼 수정 (가로 레이아웃)
 - [ ] generate history detail 추가 (프론트 참고)
 - [ ] training history detail 추가 (프론트 참고)
 - [ ] 프로필에서 favorite과 내 model에서 모델 선택시 홈으로 가진 다음 모델 창이 열리는 문제 해결(프로필 뷰 위에 놓이도록 변경)
@@ -167,10 +167,12 @@
 
 ## 📅 업데이트 로그
 
-- **2024-12-25 (오후)**: 🎨 UI/UX 개선
+- **2024-12-25 (오후)**: 🎨 대규모 UI/UX 개선 및 버그 수정
   - **태그 필터 개선**: 태그 필터와 popular/recent 정렬을 동시에 적용 가능하도록 수정
-  - filterByTags API에 sortBy 파라미터 추가
-  - 사용자가 태그 선택 + 정렬 옵션을 자유롭게 조합 가능
+  - **GenerateModal 개선**: 모델 로딩 디버깅 로그 추가, Select modal 위치 수정 (maxHeight/minHeight)
+  - **Training 화면 개선**: Advanced 섹션 접기 기능 추가, 파라미터 범위 조정 (Learning Rate: 2e-5~2e-4, Epochs: 5~250)
+  - **Profile 화면 개선**: 여백 일관화 (16px), Generation History를 모델 카드 스타일로 변경 (가로 레이아웃)
+  - **UI 일관성**: 다크/라이트 모드 색상 확인, 앱뷰 여백 통일
 
 - **2024-12-25 (오전)**: ✨ GenerateModal 추가 기능 완성
   - **이미지 다운로드 기능**: expo-file-system, expo-media-library를 사용하여 생성된 이미지를 갤러리에 저장
