@@ -86,8 +86,8 @@ export default function ProfileScreen() {
 
   const loadTrainingHistory = async () => {
     try {
-      const response = await trainingAPI.getTrainingHistory(0, 50);
-      setTrainingHistory(response.content);
+      const response = await trainingAPI.getTrainingHistory();
+      setTrainingHistory(response);
     } catch (error) {
       console.error('Failed to load training history:', error);
     }
