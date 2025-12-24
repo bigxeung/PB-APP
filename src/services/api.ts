@@ -126,9 +126,10 @@ export const modelsAPI = {
   getLikeStatus: (modelId: number) =>
     apiCall<{ isLiked: boolean }>('get', `/api/models/${modelId}/like/status`),
 
-  filterByTags: (tags: string[], page: number = 0, size: number = 20) => {
+  filterByTags: (tags: string[], page: number = 0, size: number = 20, sortBy?: 'popular' | 'recent') => {
     const tagParams = tags.map(tag => `tags=${encodeURIComponent(tag)}`).join('&');
-    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}`);
+    const sortParam = sortBy ? `&sort=${sortBy}` : '';
+    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}${sortParam}`);
   },
 
   searchModels: (query: string, page: number = 0, size: number = 20) =>
