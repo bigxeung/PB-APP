@@ -94,23 +94,26 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       const modelDetail = await modelsAPI.getModelDetail(modelId);
       console.log('Model detail loaded:', modelDetail.title, 'Status:', modelDetail.status);
 
-      if (modelDetail.status === 'COMPLETED') {
-        setSelectedModel(modelDetail);
-        // Set example prompt if available
-        if (modelDetail.prompts && modelDetail.prompts.length > 0) {
-          const firstPrompt = modelDetail.prompts[0];
-          setExamplePrompt({
-            prompt: firstPrompt.prompt,
-            negativePrompt: firstPrompt.negativePrompt,
-          });
-          console.log('Example prompt set');
-        } else {
-          setExamplePrompt(null);
-          console.log('No example prompts available');
-        }
+      // Always set the selected model, even if not COMPLETED
+      setSelectedModel(modelDetail);
+
+      // Set example prompt if available
+      if (modelDetail.prompts && modelDetail.prompts.length > 0) {
+        const firstPrompt = modelDetail.prompts[0];
+        setExamplePrompt({
+          prompt: firstPrompt.prompt,
+          negativePrompt: firstPrompt.negativePrompt,
+        });
+        console.log('Example prompt set');
       } else {
+        setExamplePrompt(null);
+        console.log('No example prompts available');
+      }
+
+      // Warn if model is not ready
+      if (modelDetail.status !== 'COMPLETED') {
         console.warn('Model not ready:', modelDetail.status);
-        Alert.alert('Error', `This model is not ready for generation yet (Status: ${modelDetail.status})`);
+        Alert.alert('Warning', `This model is not ready for generation yet (Status: ${modelDetail.status}). Please select a completed model.`);
       }
     } catch (error: any) {
       console.error('Failed to load initial model:', error);
@@ -284,6 +287,11 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
 
     if (!selectedModel) {
       Alert.alert('Error', 'Please select a model first');
+      return;
+    }
+
+    if (selectedModel.status !== 'COMPLETED') {
+      Alert.alert('Error', `This model is not ready for generation (Status: ${selectedModel.status}). Please select a completed model.`);
       return;
     }
 
@@ -1026,8 +1034,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgDark,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    maxHeight: '85%',
-    minHeight: '60%',
+    maxHeight: '80%',
+    height: '70%',
     borderWidth: 1,
     borderColor: Colors.border,
   },
