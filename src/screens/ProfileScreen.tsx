@@ -264,46 +264,49 @@ export default function ProfileScreen() {
         );
       case 'generation':
         return (
-          <View style={[styles.historyCard, { backgroundColor: cardBgColor, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.generationCard, { backgroundColor: cardBgColor, borderColor }]}
+            activeOpacity={0.7}
+          >
             {item.generatedImages.length > 0 && (
-              <View style={styles.generationImageContainer}>
+              <View style={styles.generationThumbnail}>
                 <Image
                   source={{ uri: item.generatedImages[0].s3Url }}
-                  style={styles.generationMainImage}
+                  style={styles.generationImage}
                   resizeMode="cover"
                 />
                 {item.generatedImages.length > 1 && (
                   <View style={styles.imageCountBadge}>
-                    <Ionicons name="images" size={14} color="#fff" />
+                    <Ionicons name="images" size={12} color="#fff" />
                     <Text style={styles.imageCountText}>{item.generatedImages.length}</Text>
                   </View>
                 )}
               </View>
             )}
-            <View style={styles.generationCardContent}>
-              <View style={styles.historyHeader}>
-                <Text style={[styles.historyTitle, { color: textColor }]} numberOfLines={1}>
-                  {item.modelTitle}
+            <View style={styles.generationInfo}>
+              <Text style={[styles.generationModelTitle, { color: textColor }]} numberOfLines={1}>
+                {item.modelTitle}
+              </Text>
+              <Text style={[styles.generationPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
+                {item.prompt}
+              </Text>
+              <View style={styles.generationFooter}>
+                <Text style={[styles.generationDate, { color: mutedTextColor }]}>
+                  {new Date(item.createdAt).toLocaleDateString()}
                 </Text>
                 <View
                   style={[
-                    styles.statusBadge,
+                    styles.generationStatusBadge,
                     item.status === 'SUCCESS' && styles.statusSuccess,
                     item.status === 'GENERATING' && styles.statusGenerating,
                     item.status === 'FAILED' && styles.statusFailed,
                   ]}
                 >
-                  <Text style={styles.statusText}>{item.status}</Text>
+                  <Text style={styles.generationStatusText}>{item.status}</Text>
                 </View>
               </View>
-              <Text style={[styles.historyPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
-                {item.prompt}
-              </Text>
-              <Text style={[styles.historyDate, { color: mutedTextColor }]}>
-                {new Date(item.createdAt).toLocaleDateString()}
-              </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       case 'training':
         return (
