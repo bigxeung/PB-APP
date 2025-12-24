@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,43 +8,277 @@ import {
   TextInput,
   Animated,
   Alert,
+  Image,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import Slider from '@react-native-community/slider';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import { trainingAPI, uploadAPI } from '../services/api';
+import type { TrainConfig } from '../types';
 
 // conference(front)/src/views/Training.vue 참고
+interface SelectedImage {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+}
+
 export default function TrainingScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [triggerWord, setTriggerWord] = useState('');
   const [learningRate, setLearningRate] = useState(0.0001);
   const [epochs, setEpochs] = useState(10);
   const [loraRank, setLoraRank] = useState(32);
+  const [baseModel, setBaseModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
 
+  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isTraining, setIsTraining] = useState(false);
   const [currentEpoch, setCurrentEpoch] = useState(0);
   const [totalEpochs, setTotalEpochs] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const [phase, setPhase] = useState('');
+  const [trainingJobId, setTrainingJobId] = useState<number | null>(null);
 
-  const handleStartTraining = () => {
-    if (!isAuthenticated) {
-      Alert.alert('Login Required', 'Please login to start training');
-      return;
+  // Request permission on mount
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission needed', 'Camera roll permission is required to upload images');
+        }
+      }
+    })();
+  }, []);
+
+  // Calculate recommended epochs based on image count
+  useEffect(() => {
+    if (selectedImages.length > 0) {
+      const imageCount = selectedImages.length;
+      let recommendedEpochs = 10;
+
+      if (imageCount < 15) {
+        recommendedEpochs = Math.floor(150 / imageCount);
+      } else if (imageCount <= 40) {
+        recommendedEpochs = 10;
+      } else {
+        recommendedEpochs = Math.max(5, Math.floor(400 / imageCount));
+      }
+
+      // Adjust based on learning rate
+      if (learningRate > 0.0001) {
+        recommendedEpochs = Math.floor(recommendedEpochs * 0.8);
+      }
+
+      setEpochs(recommendedEpochs);
     }
+  }, [selectedImages.length, learningRate]);
+
+  const handleAuthCheck = () => {
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to use this feature');
+      return false;
+    }
+    return true;
+  };
+
+  const handlePickImages = async () => {
+    if (!handleAuthCheck()) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets) {
+        const newImages: SelectedImage[] = result.assets.map((asset, index) => ({
+          uri: asset.uri,
+          fileName: asset.fileName || `image_${Date.now()}_${index}.jpg`,
+          mimeType: asset.mimeType || 'image/jpeg',
+        }));
+
+        setSelectedImages((prev) => [...prev, ...newImages]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick images');
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImagesToS3 = async (): Promise<string[]> => {
+    if (selectedImages.length === 0) {
+      throw new Error('No images selected');
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Get presigned URLs
+      const fileNames = selectedImages.map((img) => img.fileName);
+      const presignedUrls = await uploadAPI.getPresignedUrls(fileNames);
+
+      // Upload each image
+      const uploadedKeys: string[] = [];
+      for (let i = 0; i < selectedImages.length; i++) {
+        const image = selectedImages[i];
+        const presignedUrl = presignedUrls[i];
+
+        // Fetch the image as blob
+        const response = await fetch(image.uri);
+        const blob = await response.blob();
+
+        // Upload to S3
+        await uploadAPI.uploadToS3(presignedUrl.uploadUrl, blob);
+
+        uploadedKeys.push(presignedUrl.s3Key);
+        setUploadProgress(((i + 1) / selectedImages.length) * 100);
+      }
+
+      return uploadedKeys;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const pollTrainingProgress = async (jobId: number) => {
+    const maxAttempts = 7200; // 2 hours with 1s interval
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const activeJob = await trainingAPI.getMyActiveTrainingJob();
+
+        if (!activeJob || activeJob.id !== jobId) {
+          setIsTraining(false);
+          return;
+        }
+
+        setCurrentEpoch(activeJob.currentEpoch || 0);
+        setTotalEpochs(activeJob.totalEpochs || activeJob.epochs);
+        setPhase(activeJob.phase || '');
+
+        if (activeJob.status === 'COMPLETED') {
+          setStatusMessage('Training completed successfully!');
+          setIsTraining(false);
+          Alert.alert('Success', 'Your model has been trained successfully!');
+          // Reset form
+          setTitle('');
+          setDescription('');
+          setTriggerWord('');
+          setSelectedImages([]);
+          setTrainingJobId(null);
+          return;
+        } else if (activeJob.status === 'FAILED') {
+          setStatusMessage(activeJob.errorMessage || 'Training failed');
+          setIsTraining(false);
+          Alert.alert('Error', activeJob.errorMessage || 'Training failed');
+          setTrainingJobId(null);
+          return;
+        }
+
+        // Update status message based on phase
+        if (activeJob.phase === 'PREPROCESSING') {
+          setStatusMessage('Preprocessing images...');
+        } else if (activeJob.phase === 'TRAINING') {
+          setStatusMessage(`Training epoch ${activeJob.currentEpoch}/${activeJob.totalEpochs}...`);
+        } else if (activeJob.phase === 'UPLOADING') {
+          setStatusMessage('Uploading model...');
+        } else {
+          setStatusMessage(activeJob.phase || 'Processing...');
+        }
+
+        // Continue polling
+        if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(poll, 1000);
+        } else {
+          setStatusMessage('Training timeout - please check training history');
+          setIsTraining(false);
+        }
+      } catch (error) {
+        console.error('Training progress poll error:', error);
+        if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(poll, 1000);
+        } else {
+          setStatusMessage('Failed to get training progress');
+          setIsTraining(false);
+        }
+      }
+    };
+
+    poll();
+  };
+
+  const handleStartTraining = async () => {
+    if (!handleAuthCheck()) return;
 
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a model title');
       return;
     }
 
-    Alert.alert('Info', 'Training feature will be implemented soon');
-  };
+    if (selectedImages.length < 10) {
+      Alert.alert('Error', 'Please upload at least 10 images');
+      return;
+    }
 
-  const handleAuthCheck = () => {
-    if (!isAuthenticated) {
-      Alert.alert('Login Required', 'Please login to use this feature');
+    if (selectedImages.length > 40) {
+      Alert.alert('Error', 'Maximum 40 images allowed');
+      return;
+    }
+
+    setIsTraining(true);
+    setStatusMessage('Uploading images...');
+
+    try {
+      // Upload images to S3
+      const imageKeys = await uploadImagesToS3();
+
+      setStatusMessage('Starting training...');
+
+      // Start training
+      const trainConfig: TrainConfig = {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        triggerWord: triggerWord.trim() || undefined,
+        epochs,
+        learningRate,
+        loraRank,
+        baseModel,
+        isPublic: false,
+        skipPreprocessing: false,
+        imageKeys,
+      };
+
+      const job = await trainingAPI.startTraining(trainConfig);
+
+      setTrainingJobId(job.id);
+      setTotalEpochs(job.epochs);
+      setStatusMessage('Training started...');
+
+      // Start polling for progress
+      pollTrainingProgress(job.id);
+    } catch (error: any) {
+      console.error('Training start error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to start training');
+      setIsTraining(false);
+      setStatusMessage('');
     }
   };
 
@@ -118,64 +352,143 @@ export default function TrainingScreen() {
           <View style={styles.parametersGrid}>
             {/* Learning Rate */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>Learning Rate</Text>
-              <Text style={styles.parameterValue}>{learningRate.toExponential(0)}</Text>
-              {/* Slider would go here */}
+              <Text style={styles.label}>Learning Rate: {learningRate.toExponential(1)}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0.00001}
+                maximumValue={0.001}
+                step={0.00001}
+                value={learningRate}
+                onValueChange={setLearningRate}
+                minimumTrackTintColor={Colors.primary}
+                maximumTrackTintColor={Colors.border}
+                thumbTintColor={Colors.primary}
+                disabled={isTraining}
+              />
             </View>
 
             {/* Epochs */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>Epochs</Text>
-              <TextInput
-                style={styles.input}
-                value={String(epochs)}
-                onChangeText={(text) => setEpochs(Number(text) || 10)}
-                keyboardType="number-pad"
-                editable={!isTraining}
+              <Text style={styles.label}>Epochs: {epochs}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={5}
+                maximumValue={50}
+                step={1}
+                value={epochs}
+                onValueChange={setEpochs}
+                minimumTrackTintColor={Colors.primary}
+                maximumTrackTintColor={Colors.border}
+                thumbTintColor={Colors.primary}
+                disabled={isTraining}
               />
             </View>
 
             {/* LoRA Rank */}
             <View style={styles.parameterItem}>
-              <Text style={styles.label}>LoRA Rank</Text>
-              <TextInput
-                style={styles.input}
-                value={String(loraRank)}
-                onChangeText={(text) => setLoraRank(Number(text) || 32)}
-                keyboardType="number-pad"
-                editable={!isTraining}
+              <Text style={styles.label}>LoRA Rank: {loraRank}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={8}
+                maximumValue={128}
+                step={8}
+                value={loraRank}
+                onValueChange={setLoraRank}
+                minimumTrackTintColor={Colors.primary}
+                maximumTrackTintColor={Colors.border}
+                thumbTintColor={Colors.primary}
+                disabled={isTraining}
               />
             </View>
           </View>
 
           {/* Image Upload Section */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Training Images *</Text>
-            <TouchableOpacity
-              style={styles.uploadBox}
-              onPress={handleAuthCheck}
-              disabled={isTraining}
-            >
-              <Ionicons name="cloud-upload-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.uploadText}>Tap to upload images</Text>
-              <Text style={styles.uploadHint}>10-40 images required (JPG, PNG, WebP)</Text>
-            </TouchableOpacity>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Training Images *</Text>
+              <Text style={styles.imageCount}>
+                {selectedImages.length} / 40 images
+                {selectedImages.length < 10 && ' (min 10 required)'}
+              </Text>
+            </View>
+
+            {selectedImages.length === 0 ? (
+              <TouchableOpacity
+                style={styles.uploadBox}
+                onPress={handlePickImages}
+                disabled={isTraining || isUploading}
+              >
+                <Ionicons name="cloud-upload-outline" size={48} color={Colors.textMuted} />
+                <Text style={styles.uploadText}>Tap to upload images</Text>
+                <Text style={styles.uploadHint}>10-40 images required (JPG, PNG, WebP)</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <ScrollView
+                  horizontal
+                  style={styles.imagePreviewScroll}
+                  showsHorizontalScrollIndicator={false}
+                >
+                  {selectedImages.map((image, index) => (
+                    <View key={index} style={styles.imagePreviewContainer}>
+                      <Image source={{ uri: image.uri }} style={styles.imagePreview} />
+                      {!isTraining && !isUploading && (
+                        <TouchableOpacity
+                          style={styles.removeImageButton}
+                          onPress={() => handleRemoveImage(index)}
+                        >
+                          <Ionicons name="close-circle" size={24} color={Colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+
+                  {selectedImages.length < 40 && !isTraining && !isUploading && (
+                    <TouchableOpacity
+                      style={styles.addMoreButton}
+                      onPress={handlePickImages}
+                    >
+                      <Ionicons name="add-circle-outline" size={48} color={Colors.primary} />
+                      <Text style={styles.addMoreText}>Add More</Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+
+                {isUploading && (
+                  <View style={styles.uploadProgressContainer}>
+                    <Text style={styles.uploadProgressText}>
+                      Uploading images... {Math.round(uploadProgress)}%
+                    </Text>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[styles.progressFill, { width: `${uploadProgress}%` }]}
+                      />
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
           </View>
 
           {/* Start Training Button */}
           <TouchableOpacity
             style={[
               styles.startButton,
-              (!title.trim() || isTraining) && styles.startButtonDisabled,
+              (!title.trim() || isTraining || isUploading || selectedImages.length < 10) &&
+                styles.startButtonDisabled,
             ]}
             onPress={handleStartTraining}
-            disabled={!title.trim() || isTraining}
+            disabled={
+              !title.trim() || isTraining || isUploading || selectedImages.length < 10
+            }
           >
-            {isTraining && (
-              <View style={styles.loadingSpinner} />
-            )}
+            {(isTraining || isUploading) && <ActivityIndicator color={Colors.textPrimary} style={styles.buttonLoader} />}
             <Text style={styles.startButtonText}>
-              {isTraining ? 'Training...' : 'Start Training'}
+              {isUploading
+                ? 'Uploading...'
+                : isTraining
+                ? 'Training...'
+                : 'Start Training'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -477,5 +790,71 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
     textAlign: 'center',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+    marginTop: Spacing.xs,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  imageCount: {
+    fontSize: FontSizes.sm,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  imagePreviewScroll: {
+    marginTop: Spacing.sm,
+    maxHeight: 150,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginRight: Spacing.md,
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.bgHover,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 12,
+  },
+  addMoreButton: {
+    width: 120,
+    height: 120,
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: Colors.bgHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addMoreText: {
+    fontSize: FontSizes.sm,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginTop: Spacing.xs,
+  },
+  uploadProgressContainer: {
+    marginTop: Spacing.md,
+  },
+  uploadProgressText: {
+    fontSize: FontSizes.sm,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
+  buttonLoader: {
+    marginRight: Spacing.sm,
   },
 });

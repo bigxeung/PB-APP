@@ -9,11 +9,15 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
-import type { LoraModel } from '../../types';
+import { modelsAPI, generateAPI } from '../../services/api';
+import type { LoraModel, GenerationHistoryResponse, GenerateConfig } from '../../types';
 
 // conference(front)/src/components/generate/GenerateModal.vue 참고
 interface GenerateModalProps {
@@ -42,6 +46,10 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
   const [statusMessage, setStatusMessage] = useState('');
 
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [myModels, setMyModels] = useState<LoraModel[]>([]);
+  const [communityModels, setCommunityModels] = useState<LoraModel[]>([]);
+  const [modelPickerTab, setModelPickerTab] = useState<'my' | 'community'>('my');
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -57,6 +65,12 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (showModelPicker && isAuthenticated) {
+      loadModels();
+    }
+  }, [showModelPicker, isAuthenticated]);
+
   const handleAuthCheck = () => {
     if (!isAuthenticated) {
       Alert.alert('Login Required', 'Please login to use this feature');
@@ -65,12 +79,89 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
     return true;
   };
 
+  const loadModels = async () => {
+    setIsLoadingModels(true);
+    try {
+      const [myModelsResponse, communityModelsResponse] = await Promise.all([
+        modelsAPI.getMyModels(0, 50),
+        modelsAPI.getPublicModels(0, 50),
+      ]);
+
+      // Filter only COMPLETED models
+      setMyModels(myModelsResponse.content.filter(m => m.status === 'COMPLETED'));
+      setCommunityModels(communityModelsResponse.content.filter(m => m.status === 'COMPLETED'));
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load models');
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
   const handleSelectModel = () => {
     if (!handleAuthCheck()) return;
     setShowModelPicker(true);
   };
 
-  const handleStartGeneration = () => {
+  const handleModelSelect = (model: LoraModel) => {
+    setSelectedModel(model);
+    setShowModelPicker(false);
+  };
+
+  const pollGenerationProgress = async (userId: number, historyId: number) => {
+    const maxAttempts = 300; // 5 minutes with 1s interval
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const progress = await generateAPI.getGenerationProgress(userId, historyId);
+
+        if (progress.current_step !== undefined && progress.total_steps !== undefined) {
+          // Only update if step is greater to prevent race conditions
+          setCurrentStep(prev => Math.max(prev, progress.current_step || 0));
+          setTotalSteps(progress.total_steps);
+        }
+
+        if (progress.message) {
+          setStatusMessage(progress.message);
+        }
+
+        if (progress.status === 'SUCCESS') {
+          if (progress.image_urls && progress.image_urls.length > 0) {
+            setGeneratedImages(progress.image_urls);
+          }
+          setIsGenerating(false);
+          setStatusMessage('Generation completed!');
+          return;
+        } else if (progress.status === 'FAILED') {
+          setError(progress.error || 'Generation failed');
+          setIsGenerating(false);
+          return;
+        }
+
+        // Continue polling
+        if (attempts < maxAttempts && progress.status === 'IN_PROGRESS') {
+          attempts++;
+          setTimeout(poll, 1000);
+        } else if (attempts >= maxAttempts) {
+          setError('Generation timeout');
+          setIsGenerating(false);
+        }
+      } catch (error: any) {
+        console.error('Progress polling error:', error);
+        if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(poll, 1000);
+        } else {
+          setError('Failed to get generation progress');
+          setIsGenerating(false);
+        }
+      }
+    };
+
+    poll();
+  };
+
+  const handleStartGeneration = async () => {
     if (!handleAuthCheck()) return;
 
     if (!selectedModel) {
@@ -83,8 +174,34 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       return;
     }
 
-    // 실제 구현은 나중에
-    Alert.alert('Info', 'Generation feature will be implemented soon');
+    setIsGenerating(true);
+    setError('');
+    setGeneratedImages([]);
+    setCurrentStep(0);
+    setTotalSteps(0);
+    setStatusMessage('Starting generation...');
+
+    try {
+      const config: GenerateConfig = {
+        modelId: selectedModel.id,
+        prompt: prompt.trim(),
+        negativePrompt: negativePrompt.trim() || undefined,
+        steps,
+        guidanceScale,
+        loraScale,
+        numImages,
+      };
+
+      const result = await generateAPI.generateImage(config);
+
+      // Start polling for progress
+      if (result.userId && result.id) {
+        pollGenerationProgress(result.userId, result.id);
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to start generation');
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -168,29 +285,67 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
                   <View style={styles.parameterRow}>
                     <View style={styles.parameterItem}>
                       <Text style={styles.label}>Steps: {steps}</Text>
-                      {/* Slider would go here */}
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={10}
+                        maximumValue={100}
+                        step={5}
+                        value={steps}
+                        onValueChange={setSteps}
+                        minimumTrackTintColor={Colors.primary}
+                        maximumTrackTintColor={Colors.border}
+                        thumbTintColor={Colors.primary}
+                        disabled={isGenerating}
+                      />
                     </View>
 
                     <View style={styles.parameterItem}>
-                      <Text style={styles.label}>Guidance: {guidanceScale}</Text>
-                      {/* Slider would go here */}
+                      <Text style={styles.label}>Guidance: {guidanceScale.toFixed(1)}</Text>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={1}
+                        maximumValue={20}
+                        step={0.5}
+                        value={guidanceScale}
+                        onValueChange={setGuidanceScale}
+                        minimumTrackTintColor={Colors.primary}
+                        maximumTrackTintColor={Colors.border}
+                        thumbTintColor={Colors.primary}
+                        disabled={isGenerating}
+                      />
                     </View>
                   </View>
 
                   <View style={styles.parameterRow}>
                     <View style={styles.parameterItem}>
                       <Text style={styles.label}>LoRA Weight: {loraScale.toFixed(2)}</Text>
-                      {/* Slider would go here */}
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={2}
+                        step={0.05}
+                        value={loraScale}
+                        onValueChange={setLoraScale}
+                        minimumTrackTintColor={Colors.primary}
+                        maximumTrackTintColor={Colors.border}
+                        thumbTintColor={Colors.primary}
+                        disabled={isGenerating}
+                      />
                     </View>
 
                     <View style={styles.parameterItem}>
-                      <Text style={styles.label}>Images</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={String(numImages)}
-                        onChangeText={(text) => setNumImages(Number(text) || 1)}
-                        keyboardType="number-pad"
-                        editable={!isGenerating}
+                      <Text style={styles.label}>Images: {numImages}</Text>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={1}
+                        maximumValue={4}
+                        step={1}
+                        value={numImages}
+                        onValueChange={setNumImages}
+                        minimumTrackTintColor={Colors.primary}
+                        maximumTrackTintColor={Colors.border}
+                        thumbTintColor={Colors.primary}
+                        disabled={isGenerating}
                       />
                     </View>
                   </View>
@@ -256,7 +411,15 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
                   </View>
                 ) : (
                   <View style={styles.imagesGrid}>
-                    {/* Generated images would be displayed here */}
+                    {generatedImages.map((imageUrl, index) => (
+                      <View key={index} style={styles.imageContainer}>
+                        <Image
+                          source={{ uri: imageUrl }}
+                          style={styles.generatedImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    ))}
                   </View>
                 )}
               </View>
@@ -264,6 +427,113 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
           </ScrollView>
         </View>
       </View>
+
+      {/* Model Picker Modal */}
+      <Modal
+        visible={showModelPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowModelPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerModalContent}>
+            {/* Picker Header */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Select Model</Text>
+              <TouchableOpacity
+                onPress={() => setShowModelPicker(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, modelPickerTab === 'my' && styles.tabActive]}
+                onPress={() => setModelPickerTab('my')}
+              >
+                <Text
+                  style={[styles.tabText, modelPickerTab === 'my' && styles.tabTextActive]}
+                >
+                  My Models ({myModels.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, modelPickerTab === 'community' && styles.tabActive]}
+                onPress={() => setModelPickerTab('community')}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    modelPickerTab === 'community' && styles.tabTextActive,
+                  ]}
+                >
+                  Community ({communityModels.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Model List */}
+            <ScrollView style={styles.modelList} showsVerticalScrollIndicator={false}>
+              {isLoadingModels ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                </View>
+              ) : (
+                <>
+                  {(modelPickerTab === 'my' ? myModels : communityModels).map((model) => (
+                    <TouchableOpacity
+                      key={model.id}
+                      style={[
+                        styles.modelItem,
+                        selectedModel?.id === model.id && styles.modelItemSelected,
+                      ]}
+                      onPress={() => handleModelSelect(model)}
+                    >
+                      {model.thumbnailUrl && (
+                        <Image
+                          source={{ uri: model.thumbnailUrl }}
+                          style={styles.modelThumbnail}
+                        />
+                      )}
+                      <View style={styles.modelInfo}>
+                        <Text style={styles.modelTitle}>{model.title}</Text>
+                        <Text style={styles.modelAuthor}>by {model.userNickname}</Text>
+                        <View style={styles.modelStats}>
+                          <View style={styles.stat}>
+                            <Ionicons name="heart" size={14} color={Colors.textMuted} />
+                            <Text style={styles.statText}>{model.likeCount}</Text>
+                          </View>
+                          <View style={styles.stat}>
+                            <Ionicons name="eye" size={14} color={Colors.textMuted} />
+                            <Text style={styles.statText}>{model.viewCount}</Text>
+                          </View>
+                        </View>
+                      </View>
+                      {selectedModel?.id === model.id && (
+                        <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+
+                  {(modelPickerTab === 'my' ? myModels : communityModels).length === 0 && (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="cube-outline" size={64} color={Colors.textMuted} />
+                      <Text style={styles.emptyText}>
+                        {modelPickerTab === 'my'
+                          ? 'No models found. Train a model first!'
+                          : 'No community models available'}
+                      </Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -455,6 +725,114 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   imagesGrid: {
-    // Images grid styles
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  imageContainer: {
+    width: (Dimensions.get('window').width - Spacing.lg * 2 - Spacing.md) / 2,
+    aspectRatio: 1,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  generatedImage: {
+    width: '100%',
+    height: '100%',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  pickerModalContent: {
+    backgroundColor: Colors.bgDark,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingHorizontal: Spacing.lg,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: FontSizes.base,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  tabTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  modelList: {
+    flex: 1,
+    padding: Spacing.lg,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  modelItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  modelItemSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  modelThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.sm,
+    marginRight: Spacing.md,
+    backgroundColor: Colors.bgHover,
+  },
+  modelInfo: {
+    flex: 1,
+  },
+  modelTitle: {
+    fontSize: FontSizes.base,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  modelAuthor: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  modelStats: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
   },
 });
