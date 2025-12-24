@@ -86,14 +86,14 @@
 - [x] 좋아요 버튼
 - [x] 홈화면 태그 필터 중복 선택 가능하게 변경 (태그 + popular/recent 정렬 동시 적용)
 - [x] 네비게이션 프로필 뷰에서 설정 아이콘 (이미 오른쪽에 위치)
-- [x] 다크 모드 / 라이트 모드 색상 수정 (이미 완료되어 있음)
-- [x] 앱뷰 양 옆 여백 일관화 (Profile 16px로 통일)
-- [x] generateModal에서 모델 안불러와지는 문제 수정 (디버깅 로그 추가)
-- [x] Select modal 창이 내려가 있는 문제 (maxHeight/minHeight로 수정)
-- [x] training 창 프론트 처럼 advanced는 접히도록 수정 (아코디언 구현)
-- [x] training view learning rate / epochs 범위 조정 (2e-5~2e-4, 5~250)
-- [x] profile 밑 컴포넌트 여백 문제 (marginHorizontal: 16)
-- [x] generate history 모델 카드 뷰처럼 수정 (가로 레이아웃)
+- [ ] 다크 모드 / 라이트 모드 색상 수정 (진행 중) -trining profile 화이트모드 글씨 등등
+- [ ] 앱뷰 양 옆 여백 일관화(지금 홈 트레이닝 프로필 다 다름)
+- [ ] generateModal에서 모델 안불러와지는 문제 수정 (model detail에계되야됨)
+- [ ] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
+- [ ] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
+- [ ] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
+- [ ] prpfile 밑 컴포넌트 여백 문제
+- [ ] generate histpry 모델 카드 뷰처럼 수정
 - [ ] generate history detail 추가 (프론트 참고)
 - [ ] training history detail 추가 (프론트 참고)
 - [ ] 프로필에서 favorite과 내 model에서 모델 선택시 홈으로 가진 다음 모델 창이 열리는 문제 해결(프로필 뷰 위에 놓이도록 변경)
@@ -102,6 +102,7 @@
 - [ ] 모델 detail에 슬라이더 수정 (지금은 이미지 1개 고정인 것 처럼 보임 front 와 같이 수정)
 - [ ] 홈 모델 리스트 애니메이션 (태그나 검색 시 부자연스럽게 전환되는 문제 수정)
 - [ ] Loading Spinner 컴포넌트 / 스켈레톤 뷰
+
 - [ ] Empty State 컴포넌트
 
 ### 🟢 낮은 우선순위 (Low Priority)
@@ -167,12 +168,10 @@
 
 ## 📅 업데이트 로그
 
-- **2024-12-25 (오후)**: 🎨 대규모 UI/UX 개선 및 버그 수정
+- **2024-12-25 (오후)**: 🎨 UI/UX 개선
   - **태그 필터 개선**: 태그 필터와 popular/recent 정렬을 동시에 적용 가능하도록 수정
-  - **GenerateModal 개선**: 모델 로딩 디버깅 로그 추가, Select modal 위치 수정 (maxHeight/minHeight)
-  - **Training 화면 개선**: Advanced 섹션 접기 기능 추가, 파라미터 범위 조정 (Learning Rate: 2e-5~2e-4, Epochs: 5~250)
-  - **Profile 화면 개선**: 여백 일관화 (16px), Generation History를 모델 카드 스타일로 변경 (가로 레이아웃)
-  - **UI 일관성**: 다크/라이트 모드 색상 확인, 앱뷰 여백 통일
+  - filterByTags API에 sortBy 파라미터 추가
+  - 사용자가 태그 선택 + 정렬 옵션을 자유롭게 조합 가능
 
 - **2024-12-25 (오전)**: ✨ GenerateModal 추가 기능 완성
   - **이미지 다운로드 기능**: expo-file-system, expo-media-library를 사용하여 생성된 이미지를 갤러리에 저장
