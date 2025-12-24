@@ -91,6 +91,19 @@ export const authAPI = {
 
   logout: (refreshToken: string) =>
     apiCall('post', '/api/auth/logout', { refreshToken }),
+
+  testLogin: async (): Promise<{ accessToken: string; refreshToken: string }> => {
+    // POST /api/auth/test 엔드포인트 호출 (모바일/API용 - JSON 응답)
+    // GET /api/auth/test는 웹용 리다이렉트, POST는 모바일용 JSON 응답
+    // 테스트 유저(ID: 100)로 자동 로그인하여 JWT 토큰을 발급합니다.
+    const response = await apiClient.post('/api/auth/test');
+    const data = response.data.data;
+
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    };
+  },
 };
 
 // Models API
