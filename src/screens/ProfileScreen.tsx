@@ -556,6 +556,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: Spacing.md,
+    marginHorizontal: 16,
     overflow: 'hidden',
   },
   historyHeader: {
