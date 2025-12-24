@@ -736,6 +736,33 @@ const styles = StyleSheet.create({
   parameterItem: {
     marginBottom: Spacing.md,
   },
+  advancedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    marginBottom: 16,
+  },
+  advancedHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  advancedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  parameterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   parameterValue: {
     fontSize: FontSizes.base,
     color: Colors.primary,
