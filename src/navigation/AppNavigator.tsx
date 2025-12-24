@@ -7,9 +7,10 @@ import { useAuth } from '../context/AuthContext';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
-import ModelListScreen from '../screens/ModelListScreen';
+import HomeScreen from '../screens/HomeScreen';
 import ModelDetailScreen from '../screens/ModelDetailScreen';
 import ModelCreateScreen from '../screens/ModelCreateScreen';
+import TrainingScreen from '../screens/TrainingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 import type { RootStackParamList, MainTabParamList, HomeStackParamList } from '../types';
@@ -24,8 +25,8 @@ function HomeStackNavigator() {
     <HomeStack.Navigator>
       <HomeStack.Screen
         name="ModelList"
-        component={ModelListScreen}
-        options={{ title: 'LoRA Models' }}
+        component={HomeScreen}
+        options={{ headerShown: false }}
       />
       <HomeStack.Screen
         name="ModelDetail"
@@ -51,6 +52,8 @@ function MainTabNavigator() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Training') {
+            iconName = focused ? 'flash' : 'flash-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -63,6 +66,7 @@ function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeStackNavigator} />
+      <Tab.Screen name="Training" component={TrainingScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -70,7 +74,7 @@ function MainTabNavigator() {
 
 // 앱 네비게이터
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return null; // 또는 로딩 스크린
@@ -79,11 +83,12 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabNavigator} />
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ presentation: 'modal' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -20,14 +20,18 @@ import type { RootStackParamList } from '../types';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const [myModels, setMyModels] = useState<LoraModel[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadMyModels();
-  }, []);
+    if (isAuthenticated) {
+      loadMyModels();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const loadMyModels = async () => {
     try {
@@ -55,6 +59,28 @@ export default function ProfileScreen() {
       },
     });
   };
+
+  const handleLoginPress = () => {
+    navigation.navigate('Login');
+  };
+
+  // 로그인하지 않은 경우
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.notLoggedIn}>
+          <Ionicons name="person-circle-outline" size={80} color="#828282" />
+          <Text style={styles.notLoggedInTitle}>Login Required</Text>
+          <Text style={styles.notLoggedInText}>
+            Please login to view your profile and manage your models.
+          </Text>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
+            <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -196,5 +222,36 @@ const styles = StyleSheet.create({
   },
   modelItem: {
     width: '48%',
+  },
+  notLoggedIn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  notLoggedInTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  notLoggedInText: {
+    fontSize: 16,
+    color: '#828282',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  loginButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

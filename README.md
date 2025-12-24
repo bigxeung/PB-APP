@@ -126,23 +126,45 @@ npx eas build --platform ios --profile preview
 
 ## 개발 가이드
 
+### 📋 개발 문서 (반드시 읽어주세요!)
+
+**작업 시작 전 필수 확인:**
+
+1. **[`TODO.md`](./TODO.md)** - 해야 할 작업 목록 및 우선순위
+2. **[`claude.md`](./claude.md)** - 개발 워크플로우, Theme 시스템, 스타일 가이드
+
+### conference(front) 폴더 참조
+
+**모든 새 기능 구현 시 반드시 `conference(front)` 폴더의 해당 Vue 컴포넌트를 먼저 확인하고 참고하세요!**
+
+- `conference(front)/src/views/` → React Native Screens
+- `conference(front)/src/components/` → React Native Components
+- `conference(front)/src/assets/main.css` → `constants/theme.ts`
+
 ### 새로운 화면 추가
 
-1. `src/screens/`에 화면 컴포넌트 생성
-2. `src/types/index.ts`에 네비게이션 타입 추가
-3. `src/navigation/AppNavigator.tsx`에 라우트 추가
+1. **TODO.md에서 작업 확인**
+2. **conference(front)에서 해당 Vue 파일 확인**
+3. `src/screens/`에 화면 컴포넌트 생성
+4. `src/types/index.ts`에 네비게이션 타입 추가
+5. `src/navigation/AppNavigator.tsx`에 라우트 추가
+6. **TODO.md 업데이트**
 
 ### 새로운 API 추가
 
-1. `src/types/index.ts`에 타입 정의
-2. `src/services/api.ts`에 API 함수 추가
+1. **conference(front)/src/services/api.ts 참고**
+2. `src/types/index.ts`에 타입 정의
+3. `src/services/api.ts`에 API 함수 추가
 
 ### 스타일 가이드
 
+**→ [`claude.md`](./claude.md) 및 [`constants/theme.ts`](./constants/theme.ts) 참조**
+
+- Theme 시스템 사용 (Colors, Spacing, Radius, FontSizes, Shadows)
 - 다크 모드 기본
 - 색상: `#1A1A1D` (배경), `#3B82F6` (Primary)
 - 폰트: System Default
-- 간격: 4px 단위 (4, 8, 12, 16, 24...)
+- 간격: Spacing 사용 (xs: 4px, sm: 8px, md: 16px, lg: 24px, xl: 32px)
 
 ## 트러블슈팅
 
