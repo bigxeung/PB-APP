@@ -128,8 +128,8 @@ export const generateAPI = {
   getOngoingGeneration: () =>
     apiCall<GenerationHistoryResponse | null>('get', '/api/generate/ongoing'),
 
-  getGenerationProgress: (userId: number, historyId: number) =>
-    apiCall<GenerationProgressResponse>('get', `/api/generate/progress/${userId}/${historyId}`),
+  getGenerationProgress: (historyId: number) =>
+    apiCall<GenerationProgressResponse>('get', `/api/generate/history/${historyId}/progress`),
 
   getGenerationHistory: (page: number = 0, size: number = 20) =>
     apiCall<PageResponse<GenerationHistoryResponse>>('get', `/api/generate/history/my?page=${page}&size=${size}`),
@@ -141,10 +141,10 @@ export const trainingAPI = {
     apiCall<TrainingJobResponse>('post', '/api/training/start', config),
 
   getMyActiveTrainingJob: () =>
-    apiCall<TrainingJobResponse | null>('get', '/api/training/active'),
+    apiCall<TrainingJobResponse | null>('get', '/api/training/my/active'),
 
   deleteTrainingJob: (jobId: number) =>
-    apiCall('delete', `/api/training/${jobId}`, {}),
+    apiCall('delete', `/api/training/jobs/${jobId}`, {}),
 
   getTrainingHistory: () =>
     apiCall<TrainingJobResponse[]>('get', '/api/training/my'),
@@ -153,7 +153,7 @@ export const trainingAPI = {
 // Upload API
 export const uploadAPI = {
   getPresignedUrls: (fileNames: string[]) =>
-    apiCall<PresignedUrlResponse[]>('post', '/api/upload/presigned-urls', { fileNames }),
+    apiCall<PresignedUrlResponse[]>('post', '/api/training/upload-urls', { fileNames }),
 
   uploadToS3: async (url: string, file: Blob) => {
     const response = await fetch(url, {
