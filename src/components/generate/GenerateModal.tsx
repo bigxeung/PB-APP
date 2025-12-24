@@ -57,19 +57,39 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       setGeneratedImages([]);
       setError('');
       setPrompt('');
-      setSelectedModel(null);
       setIsGenerating(false);
       setCurrentStep(0);
       setTotalSteps(0);
       setStatusMessage('');
+
+      // Load initial model if initialModelId is provided
+      if (initialModelId) {
+        loadInitialModel(initialModelId);
+      } else {
+        setSelectedModel(null);
+      }
     }
-  }, [visible]);
+  }, [visible, initialModelId]);
 
   useEffect(() => {
     if (showModelPicker && isAuthenticated) {
       loadModels();
     }
   }, [showModelPicker, isAuthenticated]);
+
+  const loadInitialModel = async (modelId: number) => {
+    try {
+      const modelDetail = await modelsAPI.getModelDetail(modelId);
+      if (modelDetail.status === 'COMPLETED') {
+        setSelectedModel(modelDetail);
+      } else {
+        Alert.alert('Error', 'This model is not ready for generation yet');
+      }
+    } catch (error: any) {
+      console.error('Failed to load initial model:', error);
+      Alert.alert('Error', 'Failed to load model');
+    }
+  };
 
   const handleAuthCheck = () => {
     if (!isAuthenticated) {
@@ -437,7 +457,7 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
         transparent={true}
         onRequestClose={() => setShowModelPicker(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.pickerModalOverlay}>
           <View style={styles.pickerModalContent}>
             {/* Picker Header */}
             <View style={styles.header}>
@@ -482,6 +502,16 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
               {isLoadingModels ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.loadingText}>Loading models...</Text>
+                </View>
+              ) : (modelPickerTab === 'my' ? myModels : communityModels).length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="cube-outline" size={48} color={Colors.textMuted} />
+                  <Text style={styles.emptyText}>
+                    {modelPickerTab === 'my'
+                      ? 'No trained models yet.\nTrain your first model to get started!'
+                      : 'No community models available'}
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -747,6 +777,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 40,
   },
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
   pickerModalContent: {
     backgroundColor: Colors.bgDark,
     borderTopLeftRadius: Radius.xl,
@@ -787,6 +822,23 @@ const styles = StyleSheet.create({
   loadingContainer: {
     paddingVertical: 60,
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: FontSizes.base,
+    color: Colors.textSecondary,
+  },
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: FontSizes.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   modelItem: {
     flexDirection: 'row',

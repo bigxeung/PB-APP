@@ -204,6 +204,15 @@ export default function ModelDetailScreen() {
           {/* 작성자 */}
           <View style={styles.authorRow}>
             <Text style={styles.author}>by {model.userNickname || 'Anonymous'}</Text>
+            {user?.id === model.userId && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => Alert.alert('Edit Model', 'Model editing feature coming soon!')}
+              >
+                <Ionicons name="settings-outline" size={20} color="#3B82F6" />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* 태그 */}
@@ -397,12 +406,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   author: {
     fontSize: 14,
     fontWeight: '600',
     color: '#828282',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
   },
   tags: {
     flexDirection: 'row',
