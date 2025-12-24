@@ -11,9 +11,13 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { modelsAPI, generateAPI } from '../../services/api';
@@ -51,6 +55,11 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
   const [modelPickerTab, setModelPickerTab] = useState<'my' | 'community'>('my');
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
+  // Example prompts (conference(front) 참고)
+  const [examplePrompt, setExamplePrompt] = useState<{ prompt: string; negativePrompt: string } | null>(null);
+  const [positiveCopied, setPositiveCopied] = useState(false);
+  const [negativeCopied, setNegativeCopied] = useState(false);
+
   useEffect(() => {
     if (visible) {
       // Reset state when modal opens
@@ -82,6 +91,16 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       const modelDetail = await modelsAPI.getModelDetail(modelId);
       if (modelDetail.status === 'COMPLETED') {
         setSelectedModel(modelDetail);
+        // Set example prompt if available
+        if (modelDetail.prompts && modelDetail.prompts.length > 0) {
+          const firstPrompt = modelDetail.prompts[0];
+          setExamplePrompt({
+            prompt: firstPrompt.prompt,
+            negativePrompt: firstPrompt.negativePrompt,
+          });
+        } else {
+          setExamplePrompt(null);
+        }
       } else {
         Alert.alert('Error', 'This model is not ready for generation yet');
       }
@@ -122,8 +141,27 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
     setShowModelPicker(true);
   };
 
-  const handleModelSelect = (model: LoraModel) => {
-    setSelectedModel(model);
+  const handleModelSelect = async (model: LoraModel) => {
+    // Fetch full model details to get prompts
+    try {
+      const modelDetail = await modelsAPI.getModelDetail(model.id);
+      setSelectedModel(modelDetail);
+      // Set example prompt if available
+      if (modelDetail.prompts && modelDetail.prompts.length > 0) {
+        const firstPrompt = modelDetail.prompts[0];
+        setExamplePrompt({
+          prompt: firstPrompt.prompt,
+          negativePrompt: firstPrompt.negativePrompt,
+        });
+      } else {
+        setExamplePrompt(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to load model details:', error);
+      // Fallback to basic model info
+      setSelectedModel(model);
+      setExamplePrompt(null);
+    }
     setShowModelPicker(false);
   };
 
@@ -179,6 +217,50 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
     };
 
     poll();
+  };
+
+  // Copy to clipboard (conference(front) 참고)
+  const copyToClipboard = async (text: string, type: 'positive' | 'negative') => {
+    try {
+      await Clipboard.setStringAsync(text);
+      if (type === 'positive') {
+        setPositiveCopied(true);
+        setTimeout(() => setPositiveCopied(false), 1500);
+      } else {
+        setNegativeCopied(true);
+        setTimeout(() => setNegativeCopied(false), 1500);
+      }
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
+  };
+
+  // Download image (conference(front) 참고)
+  const downloadImage = async (url: string, index: number) => {
+    try {
+      // Request permissions
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant media library access to download images');
+        return;
+      }
+
+      // Download file
+      const filename = `generated-${Date.now()}-${index}.png`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      const downloadResult = await FileSystem.downloadAsync(url, fileUri);
+
+      // Save to media library
+      if (downloadResult.uri) {
+        await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
+        Alert.alert('Success', 'Image saved to gallery');
+      }
+    } catch (error) {
+      console.error('Failed to download image:', error);
+      Alert.alert('Error', 'Failed to download image');
+    }
   };
 
   const handleStartGeneration = async () => {
@@ -271,6 +353,62 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
                     <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
+
+                {/* Example Prompts (conference(front) 참고) */}
+                {examplePrompt && (
+                  <View style={styles.examplePromptSection}>
+                    <View style={styles.examplePromptHeader}>
+                      <Ionicons name="bulb-outline" size={20} color={Colors.primary} />
+                      <Text style={styles.examplePromptTitle}>Example Prompts</Text>
+                    </View>
+
+                    <View style={styles.examplePromptBox}>
+                      <View style={styles.examplePromptLabelRow}>
+                        <Text style={styles.examplePromptLabel}>Positive Prompt</Text>
+                        <TouchableOpacity
+                          style={styles.copyButton}
+                          onPress={() => copyToClipboard(examplePrompt.prompt, 'positive')}
+                        >
+                          <Ionicons
+                            name={positiveCopied ? "checkmark" : "copy-outline"}
+                            size={16}
+                            color={positiveCopied ? Colors.success : Colors.textSecondary}
+                          />
+                          <Text style={[
+                            styles.copyButtonText,
+                            positiveCopied && styles.copyButtonTextSuccess
+                          ]}>
+                            {positiveCopied ? 'Copied!' : 'Copy'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.examplePromptText}>{examplePrompt.prompt}</Text>
+                    </View>
+
+                    <View style={styles.examplePromptBox}>
+                      <View style={styles.examplePromptLabelRow}>
+                        <Text style={styles.examplePromptLabel}>Negative Prompt</Text>
+                        <TouchableOpacity
+                          style={styles.copyButton}
+                          onPress={() => copyToClipboard(examplePrompt.negativePrompt, 'negative')}
+                        >
+                          <Ionicons
+                            name={negativeCopied ? "checkmark" : "copy-outline"}
+                            size={16}
+                            color={negativeCopied ? Colors.success : Colors.textSecondary}
+                          />
+                          <Text style={[
+                            styles.copyButtonText,
+                            negativeCopied && styles.copyButtonTextSuccess
+                          ]}>
+                            {negativeCopied ? 'Copied!' : 'Copy'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.examplePromptText}>{examplePrompt.negativePrompt}</Text>
+                    </View>
+                  </View>
+                )}
 
                 {/* Prompt */}
                 <View style={styles.formGroup}>
@@ -435,12 +573,21 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
                 ) : (
                   <View style={styles.imagesGrid}>
                     {generatedImages.map((imageUrl, index) => (
-                      <View key={index} style={styles.imageContainer}>
-                        <Image
-                          source={{ uri: imageUrl }}
-                          style={styles.generatedImage}
-                          resizeMode="cover"
-                        />
+                      <View key={index} style={styles.imageWrapper}>
+                        <View style={styles.imageContainer}>
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={styles.generatedImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={styles.downloadButton}
+                          onPress={() => downloadImage(imageUrl, index)}
+                        >
+                          <Ionicons name="download-outline" size={16} color={Colors.textPrimary} />
+                          <Text style={styles.downloadButtonText}>Download</Text>
+                        </TouchableOpacity>
                       </View>
                     ))}
                   </View>
@@ -760,18 +907,95 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.md,
   },
-  imageContainer: {
+  imageWrapper: {
     width: (Dimensions.get('window').width - Spacing.lg * 2 - Spacing.md) / 2,
+  },
+  imageContainer: {
+    width: '100%',
     aspectRatio: 1,
     borderRadius: Radius.md,
     overflow: 'hidden',
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: Spacing.sm,
   },
   generatedImage: {
     width: '100%',
     height: '100%',
+  },
+  downloadButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  downloadButtonText: {
+    color: Colors.textPrimary,
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+  },
+  examplePromptSection: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  examplePromptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  examplePromptTitle: {
+    fontSize: FontSizes.base,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  examplePromptBox: {
+    marginBottom: Spacing.sm,
+  },
+  examplePromptLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  examplePromptLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  examplePromptText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    lineHeight: 20,
+    backgroundColor: Colors.bgCard,
+    padding: Spacing.sm,
+    borderRadius: Radius.sm,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.bgCard,
+  },
+  copyButtonText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  copyButtonTextSuccess: {
+    color: Colors.success,
   },
   slider: {
     width: '100%',
