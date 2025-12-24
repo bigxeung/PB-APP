@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: Colors.primary,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl * 2,
+    paddingHorizontal: 16,
     borderRadius: Radius.lg,
     ...Shadows.glow,
   },
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl * 2,
+    paddingHorizontal: 16,
     borderRadius: Radius.lg,
     marginTop: Spacing.md,
   },
