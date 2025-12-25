@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMemoryCleanup } from '../hooks/useMemoryCleanup';
 import TopNavigation from '../components/TopNavigation';
 import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../services/api';
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
@@ -47,6 +48,14 @@ export default function ProfileScreen() {
   const [selectedGenerationId, setSelectedGenerationId] = useState<number | null>(null);
   const [showTrainingDetail, setShowTrainingDetail] = useState(false);
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
+
+  // Memory cleanup for images from all tabs
+  const imageUrls = [
+    ...myModels.map(m => m.thumbnailUrl),
+    ...likedModels.map(m => m.thumbnailUrl),
+    ...generationHistory.flatMap(g => g.generatedImages?.map(i => i.s3Url) || []),
+  ].filter(Boolean);
+  useMemoryCleanup(imageUrls);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -434,6 +443,11 @@ export default function ProfileScreen() {
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.listContent}
         columnWrapperStyle={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? styles.modelRow : undefined}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        updateCellsBatchingPeriod={100}
+        removeClippedSubviews={true}
       />
 
       <GenerationHistoryDetailModal
