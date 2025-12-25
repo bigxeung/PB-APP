@@ -92,8 +92,8 @@
 - [x] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
 - [x] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
 - [x] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
-- [ ] prpfile 밑 컴포넌트 여백 문제
-- [ ] generate histpry 모델 카드 뷰처럼 수정
+- [x] prpfile 밑 컴포넌트 여백 문제
+- [x] generate histpry 모델 카드 뷰처럼 수정
 - [ ] generate history detail 추가 (프론트 참고)
 - [ ] training history detail 추가 (프론트 참고)
 - [ ] 프로필에서 favorite과 내 model에서 모델 선택시 홈으로 가진 다음 모델 창이 열리는 문제 해결(프로필 뷰 위에 놓이도록 변경)
