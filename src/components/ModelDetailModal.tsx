@@ -16,10 +16,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
-import { modelsAPI, userAPI } from '../services/api';
+import { modelsAPI, userAPI, communityAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import type { ModelDetailResponse } from '../types';
+import type { ModelDetailResponse, CommentResponse } from '../types';
 import GenerateModal from './generate/GenerateModal';
 
 interface ModelDetailModalProps {
@@ -42,6 +42,8 @@ export default function ModelDetailModal({
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [comments, setComments] = useState<CommentResponse[]>([]);
+  const [newComment, setNewComment] = useState('');
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -59,6 +61,7 @@ export default function ModelDetailModal({
   useEffect(() => {
     if (visible && modelId) {
       loadModelDetail();
+      loadComments();
     }
   }, [visible, modelId]);
 
@@ -78,6 +81,16 @@ export default function ModelDetailModal({
       setError(err.message || 'Failed to load model details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadComments = async () => {
+    if (!modelId) return;
+    try {
+      const response = await communityAPI.getComments(modelId, 0, 50);
+      setComments(response.content);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
     }
   };
 
@@ -175,6 +188,50 @@ export default function ModelDetailModal({
       return;
     }
     setShowGenerateModal(true);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to comment');
+      return;
+    }
+    if (!newComment.trim() || !modelId) return;
+
+    try {
+      const response = await communityAPI.createComment(modelId, newComment.trim());
+      setComments([response, ...comments]);
+      setNewComment('');
+      toast.success('Comment posted');
+    } catch (error) {
+      console.error('Failed to post comment:', error);
+      toast.error('Failed to post comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!isAuthenticated) return;
+
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await communityAPI.deleteComment(commentId);
+              setComments(comments.filter(c => c.id !== commentId));
+              toast.success('Comment deleted');
+            } catch (error) {
+              console.error('Failed to delete comment:', error);
+              toast.error('Failed to delete comment');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderImageItem = ({ item }: { item: { id: number; imageUrl: string } }) => (
@@ -355,9 +412,9 @@ export default function ModelDetailModal({
                   <View style={styles.tagsSection}>
                     <Text style={styles.sectionTitle}>Tags</Text>
                     <View style={styles.tagsContainer}>
-                      {model.tags.map((tag, index) => (
-                        <View key={index} style={styles.tag}>
-                          <Text style={styles.tagText}>{tag}</Text>
+                      {model.tags.map((tag) => (
+                        <View key={tag.id} style={styles.tag}>
+                          <Text style={styles.tagText}>{tag.name}</Text>
                         </View>
                       ))}
                     </View>
@@ -386,6 +443,51 @@ export default function ModelDetailModal({
                   ]}
                 >
                   <Text style={styles.statusText}>{model.status}</Text>
+                </View>
+
+                {/* Comments Section */}
+                <View style={styles.commentsSection}>
+                  <Text style={styles.sectionTitle}>Comments ({comments.length})</Text>
+
+                  {/* Comment Input */}
+                  <View style={styles.commentInputContainer}>
+                    <TextInput
+                      style={styles.commentInput}
+                      placeholder="Write a comment..."
+                      placeholderTextColor={Colors.textMuted}
+                      value={newComment}
+                      onChangeText={setNewComment}
+                      multiline
+                      numberOfLines={3}
+                    />
+                    <TouchableOpacity
+                      style={[styles.commentSubmitButton, !newComment.trim() && styles.commentSubmitButtonDisabled]}
+                      onPress={handleSubmitComment}
+                      disabled={!newComment.trim()}
+                    >
+                      <Text style={styles.commentSubmitText}>Post</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Comments List */}
+                  {comments.map((comment) => (
+                    <View key={comment.id} style={styles.commentItem}>
+                      <View style={styles.commentHeader}>
+                        <Text style={styles.commentAuthor}>{comment.authorName || 'Anonymous'}</Text>
+                        <View style={styles.commentHeaderRight}>
+                          <Text style={styles.commentDate}>
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </Text>
+                          {user?.id === comment.userId && (
+                            <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+                              <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                      <Text style={styles.commentText}>{comment.content}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
             </ScrollView>
@@ -737,5 +839,75 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     fontWeight: '600',
     color: '#fff',
+  },
+  commentsSection: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  commentInputContainer: {
+    marginBottom: Spacing.lg,
+  },
+  commentInput: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    fontSize: FontSizes.base,
+    color: Colors.textPrimary,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: Spacing.sm,
+  },
+  commentSubmitButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.md,
+    alignSelf: 'flex-end',
+  },
+  commentSubmitButtonDisabled: {
+    backgroundColor: Colors.bgHover,
+    opacity: 0.5,
+  },
+  commentSubmitText: {
+    color: '#fff',
+    fontSize: FontSizes.base,
+    fontWeight: '600',
+  },
+  commentItem: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  commentHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  commentAuthor: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  commentDate: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  commentText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
 });
