@@ -19,6 +19,7 @@ import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../s
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
 import ModelCard from '../components/ModelCard';
 import ModelDetailModal from '../components/ModelDetailModal';
+import GenerateModal from '../components/generate/GenerateModal';
 import EmptyState from '../components/EmptyState';
 import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
 import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
@@ -44,6 +45,8 @@ export default function ProfileScreen() {
 
   const [showModelDetail, setShowModelDetail] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateModelId, setGenerateModelId] = useState<number | null>(null);
   const [showGenerationDetail, setShowGenerationDetail] = useState(false);
   const [selectedGenerationId, setSelectedGenerationId] = useState<number | null>(null);
   const [showTrainingDetail, setShowTrainingDetail] = useState(false);
@@ -128,6 +131,16 @@ export default function ProfileScreen() {
   const handleModelPress = (modelId: number) => {
     setSelectedModelId(modelId);
     setShowModelDetail(true);
+  };
+
+  const handleGenerateFromDetail = (modelId: number) => {
+    setGenerateModelId(modelId);
+    setShowGenerateModal(true);
+  };
+
+  const handleCloseGenerateModal = () => {
+    setShowGenerateModal(false);
+    setGenerateModelId(null);
   };
 
   const handleLoginPress = () => {
@@ -478,6 +491,12 @@ export default function ProfileScreen() {
         }}
       />
 
+      <GenerateModal
+        visible={showGenerateModal}
+        onClose={handleCloseGenerateModal}
+        initialModelId={generateModelId !== null ? generateModelId : undefined}
+      />
+
       <ModelDetailModal
         visible={showModelDetail}
         onClose={() => {
@@ -485,6 +504,7 @@ export default function ProfileScreen() {
           setSelectedModelId(null);
         }}
         modelId={selectedModelId}
+        onGeneratePress={handleGenerateFromDetail}
       />
     </SafeAreaView>
   );

@@ -205,16 +205,14 @@ export default function ModelDetailModal({
       return;
     }
 
-    if (model?.status !== 'COMPLETED') {
-      Alert.alert('Model Not Ready', 'This model is not ready for generation yet');
-      return;
-    }
-
     if (onGeneratePress && modelId) {
       // Close this modal and let parent handle generate modal
       console.log('✅ Opening generate modal via callback');
       onClose();
-      onGeneratePress(modelId);
+      // Wait for modal close animation to complete before opening generate modal
+      setTimeout(() => {
+        onGeneratePress(modelId);
+      }, 300);
     } else {
       // Fallback to local generate modal
       console.log('✅ Opening local generate modal');
@@ -518,7 +516,7 @@ export default function ModelDetailModal({
                   {comments.map((comment) => (
                     <View key={comment.id} style={styles.commentItem}>
                       <View style={styles.commentHeader}>
-                        <Text style={styles.commentAuthor}>{comment.authorName || 'Anonymous'}</Text>
+                        <Text style={styles.commentAuthor}>{comment.userNickname || 'Anonymous'}</Text>
                         <View style={styles.commentHeaderRight}>
                           <Text style={styles.commentDate}>
                             {new Date(comment.createdAt).toLocaleDateString()}
@@ -819,7 +817,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   promptTitle: {
     fontSize: FontSizes.base,

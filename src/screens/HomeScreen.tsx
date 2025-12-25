@@ -491,7 +491,7 @@ export default function HomeScreen() {
       <GenerateModal
         visible={showGenerateModal}
         onClose={handleCloseGenerateModal}
-        initialModelId={generateModelId || undefined}
+        initialModelId={generateModelId !== null ? generateModelId : undefined}
       />
 
       <ModelDetailModal
