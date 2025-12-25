@@ -376,7 +376,7 @@ export default function TrainingScreen() {
               <View style={styles.advancedHeaderLeft}>
                 <Ionicons name="settings" size={22} color="#fff" />
                 <Text style={styles.advancedTitle}>
-                  Hyperparameters (Advanced)
+                  Hyperparameters
                 </Text>
               </View>
               <Ionicons
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   advancedTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#fff',
   },
