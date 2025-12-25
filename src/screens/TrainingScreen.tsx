@@ -40,8 +40,8 @@ export default function TrainingScreen() {
   const loraRankOptions = [16, 32, 64];
   const [loraRankIndex, setLoraRankIndex] = useState(1); // Default to 32 (index 1)
   const loraRank = loraRankOptions[loraRankIndex];
-  const [baseModel, setBaseModel] = useState('stabilityai/stable-diffusion-xl-base-1.0');
-  const [showAdvanced, setShowAdvanced] = useState(false); // Advanced 섹션 접기/펼치기
+  const [baseModel, setBaseModel] = useState('Lykon/AnyLoRA'); // Default: AnyLoRA
+  const [showAdvanced, setShowAdvanced] = useState(true); // Advanced 섹션 접기/펼치기 - 기본 펼침
 
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -65,28 +65,30 @@ export default function TrainingScreen() {
     })();
   }, []);
 
-  // Calculate recommended epochs based on image count
+  // Calculate recommended epochs based on image count and learning rate
+  // conference(front)/src/components/training/TrainingForm.vue 참고
   useEffect(() => {
     if (selectedImages.length > 0) {
       const imageCount = selectedImages.length;
-      let recommendedEpochs = 10;
+      const currentLearningRate = learningRate;
 
-      if (imageCount < 15) {
-        recommendedEpochs = Math.floor(150 / imageCount);
-      } else if (imageCount <= 40) {
-        recommendedEpochs = 10;
-      } else {
-        recommendedEpochs = Math.max(5, Math.floor(400 / imageCount));
-      }
+      // 1. 목표: 최소 1500스텝은 하되, 이미지가 많으면 장당 100스텝 비율로 늘림
+      const targetSteps = Math.max(1500, imageCount * 100);
 
-      // Adjust based on learning rate
-      if (learningRate > 0.0001) {
-        recommendedEpochs = Math.floor(recommendedEpochs * 0.8);
-      }
+      // 2. 학습률 보정(LR) + 에포크 환산(나누기)
+      const calculatedEpochs = Math.max(10, Math.floor((targetSteps * (0.0001 / currentLearningRate)) / imageCount));
 
-      setEpochs(recommendedEpochs);
+      setEpochs(calculatedEpochs);
     }
   }, [selectedImages.length, learningRate]);
+
+  // Format learning rate to show integer coefficient (1e-4 instead of 1.0e-4)
+  const formatLearningRate = (rate: number) => {
+    const exp = Math.floor(Math.log10(rate));
+    const coef = rate / Math.pow(10, exp);
+    const roundedCoef = Math.round(coef);
+    return `${roundedCoef}e${exp}`;
+  };
 
   const handleAuthCheck = () => {
     if (!isAuthenticated) {
@@ -369,17 +371,18 @@ export default function TrainingScreen() {
             <TouchableOpacity
               style={styles.advancedHeader}
               onPress={() => setShowAdvanced(!showAdvanced)}
+              activeOpacity={0.8}
             >
               <View style={styles.advancedHeaderLeft}>
-                <Ionicons name="settings-outline" size={20} color={Colors.primary} />
-                <Text style={[styles.advancedTitle, { color: textColor }]}>
+                <Ionicons name="settings" size={22} color="#fff" />
+                <Text style={styles.advancedTitle}>
                   Hyperparameters (Advanced)
                 </Text>
               </View>
               <Ionicons
                 name={showAdvanced ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={secondaryTextColor}
+                size={22}
+                color="#fff"
               />
             </TouchableOpacity>
 
@@ -392,7 +395,7 @@ export default function TrainingScreen() {
                       Learning Rate
                     </Text>
                     <Text style={[styles.parameterValue, { color: textColor }]}>
-                      {learningRate.toExponential(1)}
+                      {formatLearningRate(learningRate)}
                     </Text>
                   </View>
                   <Slider
@@ -409,6 +412,7 @@ export default function TrainingScreen() {
                   />
                   <View style={styles.rangeLabels}>
                     <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>2e-5</Text>
+                    <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>1e-4 (권장)</Text>
                     <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>2e-4</Text>
                   </View>
                 </View>
@@ -427,7 +431,7 @@ export default function TrainingScreen() {
                     style={styles.slider}
                     minimumValue={5}
                     maximumValue={250}
-                    step={1}
+                    step={5}
                     value={epochs}
                     onValueChange={setEpochs}
                     minimumTrackTintColor={Colors.primary}
@@ -438,6 +442,46 @@ export default function TrainingScreen() {
                   <View style={styles.rangeLabels}>
                     <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>5</Text>
                     <Text style={[styles.rangeLabel, { color: mutedTextColor }]}>250</Text>
+                  </View>
+                  <Text style={[styles.parameterHint, { color: mutedTextColor }]}>
+                    학습률과 이미지 수에 따라 자동 계산됨
+                  </Text>
+                </View>
+
+                {/* Base Model */}
+                <View style={styles.parameterItem}>
+                  <View style={styles.parameterHeader}>
+                    <Text style={[styles.label, { color: secondaryTextColor }]}>
+                      Base Model
+                    </Text>
+                  </View>
+                  <View style={styles.baseModelSelector}>
+                    <TouchableOpacity
+                      style={[
+                        styles.baseModelOption,
+                        baseModel === 'Lykon/AnyLoRA' && styles.baseModelOptionActive
+                      ]}
+                      onPress={() => setBaseModel('Lykon/AnyLoRA')}
+                      disabled={isTraining}
+                    >
+                      <Text style={[
+                        styles.baseModelText,
+                        baseModel === 'Lykon/AnyLoRA' && styles.baseModelTextActive
+                      ]}>AnyLoRA</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.baseModelOption,
+                        baseModel === 'stablediffusionapi/anything-v5' && styles.baseModelOptionActive
+                      ]}
+                      onPress={() => setBaseModel('stablediffusionapi/anything-v5')}
+                      disabled={isTraining}
+                    >
+                      <Text style={[
+                        styles.baseModelText,
+                        baseModel === 'stablediffusionapi/anything-v5' && styles.baseModelTextActive
+                      ]}>Anything V5</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -730,22 +774,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    backgroundColor: Colors.primary,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderWidth: 0,
     marginBottom: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   advancedHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   advancedTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
   },
   parameterHeader: {
     flexDirection: 'row',
@@ -758,6 +807,37 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
     marginTop: Spacing.xs,
+  },
+  parameterHint: {
+    fontSize: FontSizes.xs,
+    marginTop: Spacing.xs,
+    fontStyle: 'italic',
+  },
+  baseModelSelector: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  baseModelOption: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+    alignItems: 'center',
+  },
+  baseModelOptionActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  baseModelText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  baseModelTextActive: {
+    color: '#fff',
   },
   uploadBox: {
     borderWidth: 2,
