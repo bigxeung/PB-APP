@@ -17,6 +17,7 @@ import TopNavigation from '../components/TopNavigation';
 import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../services/api';
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
 import ModelCard from '../components/ModelCard';
+import ModelDetailModal from '../components/ModelDetailModal';
 import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
 import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
 import { useNavigation } from '@react-navigation/native';
@@ -39,6 +40,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [testLoginLoading, setTestLoginLoading] = useState(false);
 
+  const [showModelDetail, setShowModelDetail] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [showGenerationDetail, setShowGenerationDetail] = useState(false);
   const [selectedGenerationId, setSelectedGenerationId] = useState<number | null>(null);
   const [showTrainingDetail, setShowTrainingDetail] = useState(false);
@@ -113,8 +116,8 @@ export default function ProfileScreen() {
   };
 
   const handleModelPress = (modelId: number) => {
-    // @ts-ignore - Navigate directly to ModelDetail
-    navigation.navigate('ModelDetail', { modelId });
+    setSelectedModelId(modelId);
+    setShowModelDetail(true);
   };
 
   const handleLoginPress = () => {
@@ -458,6 +461,15 @@ export default function ProfileScreen() {
           setShowTrainingDetail(false);
           setSelectedTrainingId(null);
         }}
+      />
+
+      <ModelDetailModal
+        visible={showModelDetail}
+        onClose={() => {
+          setShowModelDetail(false);
+          setSelectedModelId(null);
+        }}
+        modelId={selectedModelId}
       />
     </SafeAreaView>
   );
