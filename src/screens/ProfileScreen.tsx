@@ -264,36 +264,31 @@ export default function ProfileScreen() {
         );
       case 'generation':
         return (
-          <TouchableOpacity
-            style={[styles.generationCard, { backgroundColor: cardBgColor, borderColor }]}
-            activeOpacity={0.7}
-          >
-            {item.generatedImages.length > 0 && (
-              <View style={styles.generationThumbnail}>
-                <Image
-                  source={{ uri: item.generatedImages[0].s3Url }}
-                  style={styles.generationImage}
-                  resizeMode="cover"
-                />
+          <View style={styles.modelItem}>
+            <TouchableOpacity
+              style={[styles.generationCard, { backgroundColor: cardBgColor, borderColor }]}
+              activeOpacity={0.7}
+            >
+              {/* Image at top */}
+              <View style={styles.generationImageContainer}>
+                {item.generatedImages.length > 0 ? (
+                  <Image
+                    source={{ uri: item.generatedImages[0].s3Url }}
+                    style={styles.generationImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.generationImagePlaceholder, { backgroundColor: cardBgColor }]}>
+                    <Ionicons name="image-outline" size={40} color={mutedTextColor} />
+                  </View>
+                )}
                 {item.generatedImages.length > 1 && (
                   <View style={styles.imageCountBadge}>
                     <Ionicons name="images" size={12} color="#fff" />
                     <Text style={styles.imageCountText}>{item.generatedImages.length}</Text>
                   </View>
                 )}
-              </View>
-            )}
-            <View style={styles.generationInfo}>
-              <Text style={[styles.generationModelTitle, { color: textColor }]} numberOfLines={1}>
-                {item.modelTitle}
-              </Text>
-              <Text style={[styles.generationPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
-                {item.prompt}
-              </Text>
-              <View style={styles.generationFooter}>
-                <Text style={[styles.generationDate, { color: mutedTextColor }]}>
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
+                {/* Status Badge */}
                 <View
                   style={[
                     styles.generationStatusBadge,
@@ -305,8 +300,21 @@ export default function ProfileScreen() {
                   <Text style={styles.generationStatusText}>{item.status}</Text>
                 </View>
               </View>
-            </View>
-          </TouchableOpacity>
+
+              {/* Content at bottom */}
+              <View style={styles.generationContent}>
+                <Text style={[styles.generationModelTitle, { color: textColor }]} numberOfLines={1}>
+                  {item.modelTitle}
+                </Text>
+                <Text style={[styles.generationPrompt, { color: secondaryTextColor }]} numberOfLines={2}>
+                  {item.prompt}
+                </Text>
+                <Text style={[styles.generationDate, { color: mutedTextColor }]}>
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         );
       case 'training':
         return (
@@ -398,12 +406,12 @@ export default function ProfileScreen() {
         data={loading ? [] : dataForTab[activeTab]}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        numColumns={activeTab === 'models' || activeTab === 'favorites' ? 2 : 1}
-        key={activeTab === 'models' || activeTab === 'favorites' ? 'two-columns' : 'one-column'}
+        numColumns={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? 2 : 1}
+        key={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? 'two-columns' : 'one-column'}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.listContent}
-        columnWrapperStyle={activeTab === 'models' || activeTab === 'favorites' ? styles.modelRow : undefined}
+        columnWrapperStyle={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? styles.modelRow : undefined}
       />
     </SafeAreaView>
   );
@@ -418,7 +426,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: Spacing.lg,
+    paddingBottom: 80,
   },
   header: {
     padding: Spacing.xl,
@@ -681,53 +689,52 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   generationCard: {
-    flexDirection: 'row',
+    flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
     overflow: 'hidden',
-    padding: 12,
   },
-  generationThumbnail: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginRight: 12,
+  generationImageContainer: {
+    position: 'relative',
+    aspectRatio: 1,
+    width: '100%',
   },
   generationImage: {
     width: '100%',
     height: '100%',
   },
-  generationInfo: {
-    flex: 1,
-    justifyContent: 'space-between',
+  generationImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  generationContent: {
+    padding: 12,
   },
   generationModelTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 4,
   },
   generationPrompt: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  generationFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 4,
   },
   generationDate: {
-    fontSize: 12,
+    fontSize: 11,
   },
   generationStatusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   generationStatusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#fff',
   },
