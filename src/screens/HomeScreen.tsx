@@ -23,6 +23,7 @@ import ModelCard from '../components/ModelCard';
 import ModelCardSkeleton from '../components/ModelCardSkeleton';
 import EmptyState from '../components/EmptyState';
 import GenerateModal from '../components/generate/GenerateModal';
+import ModelDetailModal from '../components/ModelDetailModal';
 import TopNavigation from '../components/TopNavigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -158,8 +159,12 @@ export default function HomeScreen() {
     loadModels(true);
   };
 
+  const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  const [showModelDetail, setShowModelDetail] = useState(false);
+
   const handleModelPress = (modelId: number) => {
-    navigation.navigate('ModelDetail', { modelId });
+    setSelectedModelId(modelId);
+    setShowModelDetail(true);
   };
 
   const handleCreatePress = () => {
@@ -480,6 +485,12 @@ export default function HomeScreen() {
         visible={showGenerateModal}
         onClose={handleCloseGenerateModal}
       />
+
+      <ModelDetailModal
+        visible={showModelDetail}
+        onClose={() => setShowModelDetail(false)}
+        modelId={selectedModelId}
+      />
     </SafeAreaView>
   );
 }
@@ -493,7 +504,8 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
+    marginHorizontal: -16,
     position: 'relative',
     overflow: 'hidden',
   },

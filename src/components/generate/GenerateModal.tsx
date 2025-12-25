@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   modelList: {
-    flex: 1,
+    maxHeight: 400,
     padding: Spacing.lg,
   },
   loadingContainer: {
