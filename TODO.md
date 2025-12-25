@@ -103,7 +103,7 @@
 - [x] 홈 모델 리스트 애니메이션 (태그나 검색 시 부자연스럽게 전환되는 문제 수정)
 - [x] Loading Spinner 컴포넌트 / 스켈레톤 뷰
 
-- [ ] Empty State 컴포넌트
+- [x] Empty State 컴포넌트
 
 ### 🟢 낮은 우선순위 (Low Priority)
 

@@ -21,6 +21,7 @@ import { modelsAPI, tagsAPI } from '../services/api';
 import { LoraModel, HomeStackParamList, TagResponse } from '../types';
 import ModelCard from '../components/ModelCard';
 import ModelCardSkeleton from '../components/ModelCardSkeleton';
+import EmptyState from '../components/EmptyState';
 import GenerateModal from '../components/generate/GenerateModal';
 import TopNavigation from '../components/TopNavigation';
 import { useAuth } from '../context/AuthContext';
@@ -412,29 +413,27 @@ export default function HomeScreen() {
           </>
         )}
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            {error ? (
-              <>
-                <Ionicons name="alert-circle" size={48} color="#EF4444" style={{ marginBottom: 12 }} />
-                <Text style={styles.errorText}>Error Loading Models</Text>
-                <Text style={styles.errorDetails}>{error}</Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={() => {
-                    setPage(0);
-                    loadModels(true);
-                  }}
-                >
-                  <Ionicons name="refresh" size={20} color="#fff" />
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <Text style={styles.emptyText}>No models found</Text>
-            )}
-          </View>
-        )}
+        ListEmptyComponent={() =>
+          error ? (
+            <EmptyState
+              icon="alert-circle"
+              title="Error Loading Models"
+              description={error}
+              actionLabel="Retry"
+              onAction={() => {
+                setPage(0);
+                loadModels(true);
+              }}
+              iconColor="#EF4444"
+            />
+          ) : (
+            <EmptyState
+              icon="cube-outline"
+              title="No models found"
+              description="Try adjusting your filters or check back later"
+            />
+          )
+        }
         onEndReached={() => loadModels()}
         onEndReachedThreshold={0.5}
         refreshControl={
@@ -642,41 +641,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     marginBottom: 16,
-  },
-  emptyState: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    color: '#828282',
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  errorDetails: {
-    color: '#828282',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
