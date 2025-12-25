@@ -108,17 +108,17 @@
 ### 🟢 낮은 우선순위 (Low Priority)
 
 #### 7. 추가 기능
-- [ ] 알림 기능
+- [x] 알림 기능 (expo-notifications, NotificationContext, 푸시 토큰 관리)
 
 #### 8. 성능 최적화
 - [x] 이미지 lazy loading (React Native Image 기본 지원)
 - [x] 무한 스크롤 최적화 (이미 구현됨)
-- [ ] 메모리 관리 개선
+- [x] 메모리 관리 개선 (FlatList 최적화, 이미지 캐시 관리, 앱 백그라운드 정리)
 - [x] 캐싱 전략 구현 (메모리 캐시 5분 TTL)
 
 #### 9. 에러 처리 및 UX 개선
 - [x] 전역 에러 핸들러 (API interceptor)
-- [ ] 오프라인 모드 지원
+- [x] 오프라인 모드 지원 (NetworkContext, Toast 알림)
 - [x] 재시도 로직 (자동 재시도 2회, 지수 백오프)
 - [x] 사용자 피드백 (Toast, Snackbar) (ToastContext 구현)
 
@@ -167,6 +167,19 @@
 ---
 
 ## 📅 업데이트 로그
+
+- **2024-12-25 (저녁)**: 🚀 성능 최적화 및 알림 기능 완성
+  - **오프라인 모드 지원**: NetworkContext 구현, 네트워크 상태 감지 및 Toast 알림
+  - **메모리 관리 개선**:
+    - FlatList 최적화 props 추가 (initialNumToRender, maxToRenderPerBatch, windowSize)
+    - 이미지 캐시 관리 시스템 (src/utils/memory.ts)
+    - useMemoryCleanup, useAppStateMemoryCleanup 훅 구현
+    - 앱 백그라운드 진입 시 자동 메모리 정리
+  - **푸시 알림 기능**:
+    - expo-notifications 설치 및 설정
+    - NotificationContext 구현 (권한 요청, 토큰 관리, 알림 수신)
+    - app.json에 notification 플러그인 설정 추가
+  - **모든 낮은 우선순위 작업 완료!** 🎉
 
 - **2024-12-25 (오후)**: 🎨 UI/UX 개선
   - **태그 필터 개선**: 태그 필터와 popular/recent 정렬을 동시에 적용 가능하도록 수정

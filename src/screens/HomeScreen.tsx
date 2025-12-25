@@ -26,6 +26,7 @@ import GenerateModal from '../components/generate/GenerateModal';
 import TopNavigation from '../components/TopNavigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMemoryCleanup } from '../hooks/useMemoryCleanup';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ModelList'>;
 
@@ -52,6 +53,10 @@ export default function HomeScreen() {
   const heroAnimation = useRef(new Animated.Value(0)).current;
   const fabAnimation = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<any>(null);
+
+  // Memory cleanup for images
+  const imageUrls = models.map(model => model.thumbnailUrl).filter(Boolean);
+  useMemoryCleanup(imageUrls);
 
   useEffect(() => {
     setPage(0);
@@ -404,6 +409,10 @@ export default function HomeScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
         removeClippedSubviews={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        updateCellsBatchingPeriod={100}
         ListHeaderComponent={() => (
           <>
             {renderHeroSection()}
