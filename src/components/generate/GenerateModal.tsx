@@ -93,6 +93,7 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       console.log('Fetching model details for:', modelId);
       const modelDetail = await modelsAPI.getModelDetail(modelId);
       console.log('Model detail loaded:', modelDetail.title, 'Status:', modelDetail.status);
+      console.log('Full model detail:', JSON.stringify(modelDetail, null, 2));
 
       // Always set the selected model, even if not COMPLETED
       setSelectedModel(modelDetail);
@@ -100,20 +101,27 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       // Set example prompt if available
       if (modelDetail.prompts && modelDetail.prompts.length > 0) {
         const firstPrompt = modelDetail.prompts[0];
-        setExamplePrompt({
-          prompt: firstPrompt.prompt,
-          negativePrompt: firstPrompt.negativePrompt,
-        });
-        console.log('Example prompt set');
+        if (firstPrompt && firstPrompt.prompt) {
+          setExamplePrompt({
+            prompt: firstPrompt.prompt || '',
+            negativePrompt: firstPrompt.negativePrompt || '',
+          });
+          console.log('Example prompt set:', firstPrompt.prompt);
+        } else {
+          setExamplePrompt(null);
+          console.log('Prompt data is incomplete');
+        }
       } else {
         setExamplePrompt(null);
         console.log('No example prompts available');
       }
 
       // Warn if model is not ready
-      if (modelDetail.status !== 'COMPLETED') {
+      if (modelDetail.status && modelDetail.status !== 'COMPLETED') {
         console.warn('Model not ready:', modelDetail.status);
-        Alert.alert('Warning', `This model is not ready for generation yet (Status: ${modelDetail.status}). Please select a completed model.`);
+        Alert.alert('Warning', `This model status is ${modelDetail.status}. Generation may not work properly.`);
+      } else if (!modelDetail.status) {
+        console.warn('Model status is undefined - assuming COMPLETED');
       }
     } catch (error: any) {
       console.error('Failed to load initial model:', error);
@@ -139,9 +147,9 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
         modelsAPI.getPublicModels(0, 50),
       ]);
 
-      // Filter only COMPLETED models
-      const completedMyModels = myModelsResponse.content.filter(m => m.status === 'COMPLETED');
-      const completedCommunityModels = communityModelsResponse.content.filter(m => m.status === 'COMPLETED');
+      // Filter only COMPLETED models (or models without status field)
+      const completedMyModels = myModelsResponse.content.filter(m => !m.status || m.status === 'COMPLETED');
+      const completedCommunityModels = communityModelsResponse.content.filter(m => !m.status || m.status === 'COMPLETED');
 
       setMyModels(completedMyModels);
       setCommunityModels(completedCommunityModels);
@@ -290,7 +298,8 @@ export default function GenerateModal({ visible, onClose, initialModelId }: Gene
       return;
     }
 
-    if (selectedModel.status !== 'COMPLETED') {
+    // Only check status if it exists and is not COMPLETED
+    if (selectedModel.status && selectedModel.status !== 'COMPLETED') {
       Alert.alert('Error', `This model is not ready for generation (Status: ${selectedModel.status}). Please select a completed model.`);
       return;
     }
