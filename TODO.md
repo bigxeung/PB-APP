@@ -90,8 +90,8 @@
 - [x] 앱뷰 양 옆 여백 일관화(지금 홈 트레이닝 프로필 다 다름)
 - [x] generateModal에서 모델 안불러와지는 문제 수정 (model detail에계되야됨)
 - [x] Select modal 창이 내려가 있는 문제 / 모델 안불러와지는 문제
-- [ ] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
-- [ ] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
+- [x] training 창 프론트 처럼 advanced는 접히도록 수정( confrence(fornt) 참고 )
+- [x] trianing view learning rate / ephocs 범위 조정 lorarank(16, 32, 64만 선택 가능 기본 32) -> 프론트엔드 참고
 - [ ] prpfile 밑 컴포넌트 여백 문제
 - [ ] generate histpry 모델 카드 뷰처럼 수정
 - [ ] generate history detail 추가 (프론트 참고)
