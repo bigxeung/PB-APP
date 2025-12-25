@@ -65,6 +65,14 @@ export default function TrainingScreen() {
     })();
   }, []);
 
+  // Format learning rate to show integer coefficient (1e-4 instead of 1.0e-4)
+  const formatLearningRate = (rate: number) => {
+    const exp = Math.floor(Math.log10(rate));
+    const coef = rate / Math.pow(10, exp);
+    const roundedCoef = Math.round(coef);
+    return `${roundedCoef}e${exp}`;
+  };
+
   // Calculate recommended epochs based on image count and learning rate
   // conference(front)/src/components/training/TrainingForm.vue 참고
   useEffect(() => {
@@ -78,17 +86,10 @@ export default function TrainingScreen() {
       // 2. 학습률 보정(LR) + 에포크 환산(나누기)
       const calculatedEpochs = Math.max(10, Math.floor((targetSteps * (0.0001 / currentLearningRate)) / imageCount));
 
+      console.log(`📊 Epoch 자동 계산: 이미지 ${imageCount}개, LR ${formatLearningRate(currentLearningRate)} → ${calculatedEpochs} epochs`);
       setEpochs(calculatedEpochs);
     }
   }, [selectedImages.length, learningRate]);
-
-  // Format learning rate to show integer coefficient (1e-4 instead of 1.0e-4)
-  const formatLearningRate = (rate: number) => {
-    const exp = Math.floor(Math.log10(rate));
-    const coef = rate / Math.pow(10, exp);
-    const roundedCoef = Math.round(coef);
-    return `${roundedCoef}e${exp}`;
-  };
 
   const handleAuthCheck = () => {
     if (!isAuthenticated) {
