@@ -18,6 +18,7 @@ import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../s
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
 import ModelCard from '../components/ModelCard';
 import ModelDetailModal from '../components/ModelDetailModal';
+import EmptyState from '../components/EmptyState';
 import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
 import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
 import { useNavigation } from '@react-navigation/native';
@@ -224,39 +225,39 @@ export default function ProfileScreen() {
 
   const renderEmptyComponent = () => {
     if (loading) return null;
-    
+
     switch (activeTab) {
       case 'models':
         return (
-          <View style={styles.emptyState}>
-            <Ionicons name="cube-outline" size={64} color={mutedTextColor} />
-            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No models yet</Text>
-            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Train your first model to get started</Text>
-          </View>
+          <EmptyState
+            icon="cube-outline"
+            title="No models yet"
+            description="Train your first model to get started"
+          />
         );
       case 'favorites':
         return (
-          <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={64} color={mutedTextColor} />
-            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No favorites yet</Text>
-            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Like models to see them here</Text>
-          </View>
+          <EmptyState
+            icon="heart-outline"
+            title="No favorites yet"
+            description="Like models to see them here"
+          />
         );
       case 'generation':
         return (
-          <View style={styles.emptyState}>
-            <Ionicons name="images-outline" size={64} color={mutedTextColor} />
-            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No generation history</Text>
-            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Generate images to see them here</Text>
-          </View>
+          <EmptyState
+            icon="images-outline"
+            title="No generation history"
+            description="Generate images to see them here"
+          />
         );
       case 'training':
         return (
-          <View style={styles.emptyState}>
-            <Ionicons name="construct-outline" size={64} color={mutedTextColor} />
-            <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No training history</Text>
-            <Text style={[styles.emptyHint, { color: mutedTextColor }]}>Train models to see them here</Text>
-          </View>
+          <EmptyState
+            icon="construct-outline"
+            title="No training history"
+            description="Train models to see them here"
+          />
         );
       default:
         return null;
@@ -579,18 +580,6 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: Spacing.xl,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    marginTop: Spacing.md,
-    fontSize: FontSizes.base,
-  },
-  emptyHint: {
-    marginTop: Spacing.sm,
-    fontSize: FontSizes.sm,
   },
   modelList: {},
   modelRow: {
