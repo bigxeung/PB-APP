@@ -391,6 +391,7 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
       <TopNavigation onSearchPress={handleSearchPress} />
       <FlatList
+        key={`${tab}-${selectedTags.join(',')}`}
         ref={flatListRef}
         style={[styles.container, { backgroundColor: bgColor }]}
         data={models}
@@ -401,6 +402,7 @@ export default function HomeScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
+        removeClippedSubviews={false}
         ListHeaderComponent={() => (
           <>
             {renderHeroSection()}
