@@ -140,11 +140,13 @@ export default function ModelDetailScreen() {
   };
 
   const renderImageItem = ({ item }: { item: { id: number; imageUrl: string } }) => (
-    <Image
-      source={{ uri: item.imageUrl }}
-      style={styles.mainImage}
-      resizeMode="cover"
-    />
+    <View style={styles.imageItemContainer}>
+      <Image
+        source={{ uri: item.imageUrl }}
+        style={styles.mainImage}
+        resizeMode="cover"
+      />
+    </View>
   );
 
   if (loading || !model) {
@@ -170,22 +172,19 @@ export default function ModelDetailScreen() {
               renderItem={renderImageItem}
               keyExtractor={(item) => item.id.toString()}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
+              snapToInterval={SCREEN_WIDTH * 0.85 + 16}
+              snapToAlignment="start"
+              decelerationRate="fast"
+              contentContainerStyle={styles.imageListContainer}
               onViewableItemsChanged={onViewableItemsChanged}
               viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
             />
             {model.samples.length > 1 && (
               <View style={styles.pagination}>
-                {model.samples.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.paginationDot,
-                      index === currentImageIndex && styles.paginationDotActive,
-                    ]}
-                  />
-                ))}
+                <Text style={styles.imageCounter}>
+                  {currentImageIndex + 1} / {model.samples.length}
+                </Text>
               </View>
             )}
           </View>
@@ -365,30 +364,39 @@ const styles = StyleSheet.create({
   },
   imageGallery: {
     width: SCREEN_WIDTH,
-    aspectRatio: 1,
-    backgroundColor: '#28282B',
+    height: SCREEN_WIDTH * 0.85,
     position: 'relative',
+    marginBottom: 16,
+  },
+  imageListContainer: {
+    paddingHorizontal: 16,
+  },
+  imageItemContainer: {
+    width: SCREEN_WIDTH * 0.85,
+    height: SCREEN_WIDTH * 0.85,
+    marginRight: 16,
   },
   mainImage: {
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: '100%',
+    backgroundColor: '#28282B',
+    borderRadius: 12,
   },
   pagination: {
-    flexDirection: 'row',
     position: 'absolute',
     bottom: 16,
-    alignSelf: 'center',
-    gap: 6,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
-  paginationDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  paginationDotActive: {
-    backgroundColor: '#fff',
-    width: 20,
+  imageCounter: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    fontSize: 14,
+    fontWeight: '600',
   },
   content: {
     padding: 20,
