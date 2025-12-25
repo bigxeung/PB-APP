@@ -11,10 +11,12 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  TextInput,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
-import { modelsAPI } from '../services/api';
+import { modelsAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import type { ModelDetailResponse } from '../types';
 import GenerateModal from './generate/GenerateModal';
@@ -32,12 +34,19 @@ export default function ModelDetailModal({
   onClose,
   modelId,
 }: ModelDetailModalProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [model, setModel] = useState<ModelDetailResponse | null>(null);
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [editedIsPublic, setEditedIsPublic] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -59,12 +68,88 @@ export default function ModelDetailModal({
       setError('');
       const data = await modelsAPI.getModelDetail(modelId);
       setModel(data);
+      setEditedTitle(data.title);
+      setEditedDescription(data.description || '');
+      setEditedIsPublic(data.isPublic);
       setCurrentImageIndex(0);
     } catch (err: any) {
       setError(err.message || 'Failed to load model details');
     } finally {
       setLoading(false);
     }
+  };
+
+  const isOwner = user && model && model.userId === user.id;
+
+  const handleStartEdit = () => {
+    if (!model) return;
+    setEditedTitle(model.title);
+    setEditedDescription(model.description || '');
+    setEditedIsPublic(model.isPublic);
+    setIsEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    if (model) {
+      setEditedTitle(model.title);
+      setEditedDescription(model.description || '');
+      setEditedIsPublic(model.isPublic);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!modelId || !model) return;
+
+    try {
+      setSaving(true);
+      await modelsAPI.updateModel(modelId, {
+        title: editedTitle,
+        description: editedDescription,
+        isPublic: editedIsPublic,
+      });
+
+      // Update local state
+      setModel({
+        ...model,
+        title: editedTitle,
+        description: editedDescription,
+        isPublic: editedIsPublic,
+      });
+
+      setIsEditMode(false);
+      Alert.alert('Success', 'Model updated successfully');
+    } catch (err: any) {
+      console.error('Failed to update model:', err);
+      Alert.alert('Error', 'Failed to update model');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!modelId) return;
+
+    Alert.alert(
+      'Delete Model',
+      'Are you sure you want to delete this model? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await modelsAPI.deleteModel(modelId);
+              Alert.alert('Success', 'Model deleted successfully');
+              onClose();
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete model');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLike = async () => {
@@ -106,11 +191,28 @@ export default function ModelDetailModal({
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            <TouchableOpacity onPress={isEditMode ? handleCancelEdit : onClose} style={styles.closeButton}>
+              <Ionicons name={isEditMode ? "close" : "arrow-back"} size={24} color={Colors.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Model Details</Text>
-            <View style={styles.headerPlaceholder} />
+            <Text style={styles.headerTitle}>{isEditMode ? 'Edit Model' : 'Model Details'}</Text>
+            {isOwner && !loading && model && (
+              <View style={styles.headerActions}>
+                {isEditMode ? (
+                  <TouchableOpacity onPress={handleSaveEdit} style={styles.saveButton} disabled={saving}>
+                    {saving ? (
+                      <ActivityIndicator size="small" color={Colors.primary} />
+                    ) : (
+                      <Ionicons name="checkmark" size={24} color={Colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={handleStartEdit} style={styles.editButton}>
+                    <Ionicons name="create-outline" size={22} color={Colors.textPrimary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            {!isOwner && <View style={styles.headerPlaceholder} />}
           </View>
 
           {loading ? (
@@ -154,11 +256,67 @@ export default function ModelDetailModal({
               {/* Model Info */}
               <View style={styles.content}>
                 {/* Title */}
-                <Text style={styles.title}>{model.title}</Text>
+                {isEditMode ? (
+                  <View style={styles.editSection}>
+                    <Text style={styles.editLabel}>Model Name</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editedTitle}
+                      onChangeText={setEditedTitle}
+                      placeholder="Enter model name"
+                      placeholderTextColor={Colors.textMuted}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.title}>{model.title}</Text>
+                )}
 
                 {/* Description */}
-                {model.description && (
-                  <Text style={styles.description}>{model.description}</Text>
+                {isEditMode ? (
+                  <View style={styles.editSection}>
+                    <Text style={styles.editLabel}>Description</Text>
+                    <TextInput
+                      style={[styles.editInput, styles.editTextArea]}
+                      value={editedDescription}
+                      onChangeText={setEditedDescription}
+                      placeholder="Enter description"
+                      placeholderTextColor={Colors.textMuted}
+                      multiline
+                      numberOfLines={4}
+                    />
+                  </View>
+                ) : (
+                  model.description && (
+                    <Text style={styles.description}>{model.description}</Text>
+                  )
+                )}
+
+                {/* Public/Private Toggle (only in edit mode) */}
+                {isEditMode && (
+                  <View style={styles.editSection}>
+                    <View style={styles.publicToggleRow}>
+                      <View>
+                        <Text style={styles.editLabel}>Public Model</Text>
+                        <Text style={styles.editHint}>
+                          {editedIsPublic ? 'Visible to everyone' : 'Only visible to you'}
+                        </Text>
+                      </View>
+                      <Switch
+                        value={editedIsPublic}
+                        onValueChange={setEditedIsPublic}
+                        trackColor={{ false: Colors.bgHover, true: Colors.primary }}
+                        thumbColor={Colors.textPrimary}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* Delete Button (only in edit mode) */}
+                {isEditMode && (
+                  <TouchableOpacity style={styles.deleteModelButton} onPress={handleDelete}>
+                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                    <Text style={styles.deleteModelButtonText}>Delete Model</Text>
+                  </TouchableOpacity>
                 )}
 
                 {/* Author Info */}
@@ -294,6 +452,16 @@ const styles = StyleSheet.create({
   headerPlaceholder: {
     width: 40,
   },
+  headerActions: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  editButton: {
+    padding: Spacing.xs,
+  },
+  saveButton: {
+    padding: Spacing.xs,
+  },
   scrollContent: {
     flex: 1,
   },
@@ -370,6 +538,60 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 24,
     marginBottom: Spacing.lg,
+  },
+  editSection: {
+    marginBottom: Spacing.lg,
+  },
+  editLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  editInput: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    fontSize: FontSizes.base,
+    color: Colors.textPrimary,
+  },
+  editTextArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  editHint: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  publicToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+  },
+  deleteModelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  deleteModelButtonText: {
+    fontSize: FontSizes.base,
+    fontWeight: '600',
+    color: Colors.error,
   },
   authorSection: {
     flexDirection: 'row',
