@@ -17,6 +17,8 @@ import TopNavigation from '../components/TopNavigation';
 import { modelsAPI, userAPI, communityAPI, generateAPI, trainingAPI } from '../services/api';
 import { LoraModel, GenerationHistoryResponse, TrainingJobResponse } from '../types';
 import ModelCard from '../components/ModelCard';
+import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
+import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -36,6 +38,11 @@ export default function ProfileScreen() {
   const [trainingHistory, setTrainingHistory] = useState<TrainingJobResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [testLoginLoading, setTestLoginLoading] = useState(false);
+
+  const [showGenerationDetail, setShowGenerationDetail] = useState(false);
+  const [selectedGenerationId, setSelectedGenerationId] = useState<number | null>(null);
+  const [showTrainingDetail, setShowTrainingDetail] = useState(false);
+  const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -268,6 +275,10 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={[styles.generationCard, { backgroundColor: cardBgColor, borderColor }]}
               activeOpacity={0.7}
+              onPress={() => {
+                setSelectedGenerationId(item.id);
+                setShowGenerationDetail(true);
+              }}
             >
               {/* Image at top */}
               <View style={styles.generationImageContainer}>
@@ -318,7 +329,14 @@ export default function ProfileScreen() {
         );
       case 'training':
         return (
-          <View style={[styles.historyCard, { backgroundColor: cardBgColor, borderColor }]}>
+          <TouchableOpacity
+            style={[styles.historyCard, { backgroundColor: cardBgColor, borderColor }]}
+            activeOpacity={0.7}
+            onPress={() => {
+              setSelectedTrainingId(item.id);
+              setShowTrainingDetail(true);
+            }}
+          >
             <View style={styles.trainingCardContent}>
               <View style={styles.historyHeader}>
               <Text style={[styles.historyTitle, { color: textColor }]}>{item.modelName}</Text>
@@ -350,7 +368,7 @@ export default function ProfileScreen() {
               {new Date(item.createdAt).toLocaleDateString()}
             </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       default:
         return null;
@@ -412,6 +430,34 @@ export default function ProfileScreen() {
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.listContent}
         columnWrapperStyle={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? styles.modelRow : undefined}
+      />
+
+      <GenerationHistoryDetailModal
+        visible={showGenerationDetail}
+        onClose={() => {
+          setShowGenerationDetail(false);
+          setSelectedGenerationId(null);
+        }}
+        historyId={selectedGenerationId}
+        onDeleted={(id) => {
+          setGenerationHistory(prev => prev.filter(h => h.id !== id));
+          setShowGenerationDetail(false);
+          setSelectedGenerationId(null);
+        }}
+      />
+
+      <TrainingHistoryDetailModal
+        visible={showTrainingDetail}
+        onClose={() => {
+          setShowTrainingDetail(false);
+          setSelectedTrainingId(null);
+        }}
+        jobId={selectedTrainingId}
+        onDeleted={(id) => {
+          setTrainingHistory(prev => prev.filter(h => h.id !== id));
+          setShowTrainingDetail(false);
+          setSelectedTrainingId(null);
+        }}
       />
     </SafeAreaView>
   );
