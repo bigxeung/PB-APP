@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   imageCountBadge: {
     position: 'absolute',
     top: 12,
-    right: 12,
+    left: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,

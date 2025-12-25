@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingVertical: 60,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     position: 'relative',
     overflow: 'hidden',
   },
