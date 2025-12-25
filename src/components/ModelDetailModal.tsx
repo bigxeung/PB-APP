@@ -26,6 +26,7 @@ interface ModelDetailModalProps {
   visible: boolean;
   onClose: () => void;
   modelId: number | null;
+  onGeneratePress?: (modelId: number) => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -34,6 +35,7 @@ export default function ModelDetailModal({
   visible,
   onClose,
   modelId,
+  onGeneratePress,
 }: ModelDetailModalProps) {
   const { isAuthenticated, user } = useAuth();
   const toast = useToast();
@@ -72,6 +74,14 @@ export default function ModelDetailModal({
       setLoading(true);
       setError('');
       const data = await modelsAPI.getModelDetail(modelId);
+      console.log('📊 Model detail loaded:', {
+        id: data.id,
+        title: data.title,
+        promptsCount: data.prompts?.length || 0,
+        prompts: data.prompts,
+        samplesCount: data.samples?.length || 0,
+        tagsCount: data.tags?.length || 0,
+      });
       setModel(data);
       setEditedTitle(data.title);
       setEditedDescription(data.description || '');
@@ -187,7 +197,14 @@ export default function ModelDetailModal({
       Alert.alert('Login Required', 'Please login to generate images');
       return;
     }
-    setShowGenerateModal(true);
+    if (onGeneratePress && modelId) {
+      // Close this modal and let parent handle generate modal
+      onClose();
+      onGeneratePress(modelId);
+    } else {
+      // Fallback to local generate modal
+      setShowGenerateModal(true);
+    }
   };
 
   const handleSubmitComment = async () => {

@@ -161,10 +161,16 @@ export default function HomeScreen() {
 
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [showModelDetail, setShowModelDetail] = useState(false);
+  const [generateModelId, setGenerateModelId] = useState<number | null>(null);
 
   const handleModelPress = (modelId: number) => {
     setSelectedModelId(modelId);
     setShowModelDetail(true);
+  };
+
+  const handleGenerateFromDetail = (modelId: number) => {
+    setGenerateModelId(modelId);
+    setShowGenerateModal(true);
   };
 
   const handleCreatePress = () => {
@@ -173,6 +179,7 @@ export default function HomeScreen() {
 
   const handleCloseGenerateModal = () => {
     setShowGenerateModal(false);
+    setGenerateModelId(null);
   };
 
   const handleSearch = () => {
@@ -484,12 +491,14 @@ export default function HomeScreen() {
       <GenerateModal
         visible={showGenerateModal}
         onClose={handleCloseGenerateModal}
+        initialModelId={generateModelId || undefined}
       />
 
       <ModelDetailModal
         visible={showModelDetail}
         onClose={() => setShowModelDetail(false)}
         modelId={selectedModelId}
+        onGeneratePress={handleGenerateFromDetail}
       />
     </SafeAreaView>
   );
