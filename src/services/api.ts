@@ -134,6 +134,18 @@ export const modelsAPI = {
 
   searchModels: (query: string, page: number = 0, size: number = 20) =>
     apiCall<PageResponse<LoraModel>>('get', `/api/models/search?query=${encodeURIComponent(query)}&page=${page}&size=${size}`),
+
+  updateModel: (modelId: number, data: Partial<{
+    title: string;
+    description: string;
+    characterName: string;
+    style: string;
+    isPublic: boolean;
+  }>) =>
+    apiCall<LoraModel>('put', `/api/models/${modelId}`, data),
+
+  deleteModel: (modelId: number) =>
+    apiCall<void>('delete', `/api/models/${modelId}`),
 };
 
 // User API
