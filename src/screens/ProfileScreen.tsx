@@ -436,7 +436,7 @@ export default function ProfileScreen() {
       <FlatList
         data={loading ? [] : dataForTab[activeTab]}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => item?.id?.toString() || `item-${index}`}
         numColumns={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? 2 : 1}
         key={activeTab === 'models' || activeTab === 'favorites' || activeTab === 'generation' ? 'two-columns' : 'one-column'}
         ListHeaderComponent={renderListHeader}

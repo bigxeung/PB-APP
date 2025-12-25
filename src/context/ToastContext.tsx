@@ -39,11 +39,13 @@ export const useToast = () => {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+let toastCounter = 0;
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const showToast = useCallback((type: ToastType, message: string, duration = 3000) => {
-    const id = Date.now().toString();
+    const id = `${Date.now()}_${++toastCounter}`;
     const toast: ToastMessage = { id, type, message, duration };
 
     setToasts((prev) => [...prev, toast]);
