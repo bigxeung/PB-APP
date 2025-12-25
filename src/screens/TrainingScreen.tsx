@@ -76,8 +76,10 @@ export default function TrainingScreen() {
   // Calculate recommended epochs based on image count and learning rate
   // conference(front)/src/components/training/TrainingForm.vue 참고
   useEffect(() => {
-    if (selectedImages.length > 0) {
-      const imageCount = selectedImages.length;
+    const imageCount = selectedImages.length;
+    console.log(`🔄 이미지 개수 변경 감지: ${imageCount}개`);
+
+    if (imageCount > 0) {
       const currentLearningRate = learningRate;
 
       // 1. 목표: 최소 1500스텝은 하되, 이미지가 많으면 장당 100스텝 비율로 늘림
@@ -88,6 +90,9 @@ export default function TrainingScreen() {
 
       console.log(`📊 Epoch 자동 계산: 이미지 ${imageCount}개, LR ${formatLearningRate(currentLearningRate)} → ${calculatedEpochs} epochs`);
       setEpochs(calculatedEpochs);
+    } else {
+      console.log(`⚠️ 이미지가 없어서 epoch 초기화: 10`);
+      setEpochs(10);
     }
   }, [selectedImages.length, learningRate]);
 
