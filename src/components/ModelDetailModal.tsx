@@ -193,16 +193,31 @@ export default function ModelDetailModal({
   };
 
   const handleGenerate = () => {
+    console.log('🎨 Generate button pressed', {
+      isAuthenticated,
+      modelId,
+      hasCallback: !!onGeneratePress,
+      modelStatus: model?.status,
+    });
+
     if (!isAuthenticated) {
       Alert.alert('Login Required', 'Please login to generate images');
       return;
     }
+
+    if (model?.status !== 'COMPLETED') {
+      Alert.alert('Model Not Ready', 'This model is not ready for generation yet');
+      return;
+    }
+
     if (onGeneratePress && modelId) {
       // Close this modal and let parent handle generate modal
+      console.log('✅ Opening generate modal via callback');
       onClose();
       onGeneratePress(modelId);
     } else {
       // Fallback to local generate modal
+      console.log('✅ Opening local generate modal');
       setShowGenerateModal(true);
     }
   };
@@ -401,7 +416,7 @@ export default function ModelDetailModal({
                     <Ionicons name="person" size={20} color={Colors.textPrimary} />
                   </View>
                   <View style={styles.authorInfo}>
-                    <Text style={styles.authorName}>{model.authorName || 'Anonymous'}</Text>
+                    <Text style={styles.authorName}>{model.userNickname || 'Anonymous'}</Text>
                     <Text style={styles.authorDate}>
                       {new Date(model.createdAt).toLocaleDateString()}
                     </Text>
@@ -412,15 +427,11 @@ export default function ModelDetailModal({
                 <View style={styles.statsRow}>
                   <View style={styles.statItem}>
                     <Ionicons name="heart" size={16} color={Colors.error} />
-                    <Text style={styles.statText}>{model.likesCount}</Text>
+                    <Text style={styles.statText}>{model.likeCount || 0}</Text>
                   </View>
                   <View style={styles.statItem}>
                     <Ionicons name="eye" size={16} color={Colors.primary} />
-                    <Text style={styles.statText}>{model.viewCount}</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Ionicons name="star" size={16} color={Colors.warning} />
-                    <Text style={styles.statText}>{model.favoritesCount}</Text>
+                    <Text style={styles.statText}>{model.viewCount || 0}</Text>
                   </View>
                 </View>
 
@@ -526,7 +537,7 @@ export default function ModelDetailModal({
               <TouchableOpacity
                 style={[styles.actionButton, styles.generateButton]}
                 onPress={handleGenerate}
-                disabled={model.status !== 'COMPLETED'}
+                activeOpacity={0.7}
               >
                 <Text style={styles.generateButtonText}>Generate</Text>
                 <Ionicons name="sparkles" size={20} color="#fff" />
