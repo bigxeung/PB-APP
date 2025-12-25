@@ -33,6 +33,25 @@ export const apiClient = axios.create({
 console.log('🌐 API Client initialized with baseURL:', API_BASE_URL);
 console.log('🔍 ENV_API_BASE_URL from @env:', ENV_API_BASE_URL);
 
+// 간단한 메모리 캐시
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+
+function getCacheKey(method: string, url: string, data?: any): string {
+  return `${method}:${url}:${JSON.stringify(data || {})}`;
+}
+
+// 캐시 클리어 함수
+export function clearApiCache() {
+  cache.clear();
+  console.log('🗑️ API cache cleared');
+}
+
 // 요청 인터셉터 (토큰 자동 추가)
 apiClient.interceptors.request.use(
   async (config) => {
@@ -56,27 +75,15 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    if (error.response?.status === 401) {
-      // 토큰 만료 시 로그아웃
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // 토큰 만료 시 로그아웃 및 캐시 클리어
       await AsyncStorage.removeItem('accessToken');
       await AsyncStorage.removeItem('refreshToken');
+      clearApiCache();
     }
     return Promise.reject(error);
   }
 );
-
-// 간단한 메모리 캐시
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
-const cache = new Map<string, CacheEntry<any>>();
-const CACHE_TTL = 5 * 60 * 1000; // 5분
-
-function getCacheKey(method: string, url: string, data?: any): string {
-  return `${method}:${url}:${JSON.stringify(data || {})}`;
-}
 
 // API 래퍼 함수 (재시도 로직 + 캐싱 포함)
 async function apiCall<T>(
@@ -131,9 +138,10 @@ async function apiCall<T>(
       // 모든 재시도 실패
       console.error(`❌ API Error after ${retries} retries: ${method.toUpperCase()} ${url}`, {
         status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-    });
-    throw error;
+        message: error.response?.data?.message || error.message,
+      });
+      throw error;
+    }
   }
 }
 
