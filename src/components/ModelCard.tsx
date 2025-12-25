@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LoraModel } from '../types';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../../constants/theme';
 
 interface ModelCardProps {
   model: LoraModel;
@@ -9,6 +11,13 @@ interface ModelCardProps {
 }
 
 export default function ModelCard({ model, onPress }: ModelCardProps) {
+  const { isDark } = useTheme();
+  const cardBgColor = isDark ? '#28282B' : '#F5F5F5';
+  const imageBgColor = isDark ? '#3A3A3D' : '#E0E0E0';
+  const textColor = isDark ? '#fff' : '#000';
+  const secondaryTextColor = isDark ? '#828282' : '#666';
+  const statTextColor = isDark ? '#BDBDBD' : '#999';
+
   const formatNumber = (num: number) => {
     if (num >= 1000) {
       return `${(num / 1000).toFixed(1)}k`;
@@ -17,8 +26,8 @@ export default function ModelCard({ model, onPress }: ModelCardProps) {
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.imageContainer}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: cardBgColor }]} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.imageContainer, { backgroundColor: imageBgColor }]}>
         {model.thumbnailUrl ? (
           <Image
             source={{ uri: model.thumbnailUrl }}
@@ -27,7 +36,7 @@ export default function ModelCard({ model, onPress }: ModelCardProps) {
           />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={40} color="#828282" />
+            <Ionicons name="image-outline" size={40} color={secondaryTextColor} />
           </View>
         )}
         {model.isLiked && (
@@ -38,21 +47,21 @@ export default function ModelCard({ model, onPress }: ModelCardProps) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>
           {model.title}
         </Text>
-        <Text style={styles.author} numberOfLines={1}>
+        <Text style={[styles.author, { color: secondaryTextColor }]} numberOfLines={1}>
           {model.userNickname || 'Anonymous'}
         </Text>
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Ionicons name="heart-outline" size={14} color="#BDBDBD" />
-            <Text style={styles.statText}>{formatNumber(model.likeCount)}</Text>
+            <Ionicons name="heart-outline" size={14} color={statTextColor} />
+            <Text style={[styles.statText, { color: statTextColor }]}>{formatNumber(model.likeCount)}</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="eye-outline" size={14} color="#BDBDBD" />
-            <Text style={styles.statText}>{formatNumber(model.viewCount)}</Text>
+            <Ionicons name="eye-outline" size={14} color={statTextColor} />
+            <Text style={[styles.statText, { color: statTextColor }]}>{formatNumber(model.viewCount)}</Text>
           </View>
         </View>
       </View>
@@ -63,14 +72,12 @@ export default function ModelCard({ model, onPress }: ModelCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#28282B',
     borderRadius: 12,
     overflow: 'hidden',
   },
   imageContainer: {
     position: 'relative',
     aspectRatio: 1,
-    backgroundColor: '#3A3A3D',
   },
   image: {
     width: '100%',
@@ -99,12 +106,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 4,
   },
   author: {
     fontSize: 12,
-    color: '#828282',
     marginBottom: 8,
   },
   stats: {
@@ -118,6 +123,5 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
-    color: '#BDBDBD',
   },
 });
