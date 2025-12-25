@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
 import { modelsAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import type { ModelDetailResponse } from '../types';
 import GenerateModal from './generate/GenerateModal';
 
@@ -35,6 +36,7 @@ export default function ModelDetailModal({
   modelId,
 }: ModelDetailModalProps) {
   const { isAuthenticated, user } = useAuth();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [model, setModel] = useState<ModelDetailResponse | null>(null);
   const [error, setError] = useState('');
@@ -118,10 +120,10 @@ export default function ModelDetailModal({
       });
 
       setIsEditMode(false);
-      Alert.alert('Success', 'Model updated successfully');
+      toast.success('Model updated successfully');
     } catch (err: any) {
       console.error('Failed to update model:', err);
-      Alert.alert('Error', 'Failed to update model');
+      toast.error('Failed to update model');
     } finally {
       setSaving(false);
     }
@@ -141,10 +143,10 @@ export default function ModelDetailModal({
           onPress: async () => {
             try {
               await modelsAPI.deleteModel(modelId);
-              Alert.alert('Success', 'Model deleted successfully');
+              toast.success('Model deleted successfully');
               onClose();
             } catch (err) {
-              Alert.alert('Error', 'Failed to delete model');
+              toast.error('Failed to delete model');
             }
           },
         },

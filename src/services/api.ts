@@ -65,19 +65,72 @@ apiClient.interceptors.response.use(
   }
 );
 
-// API 래퍼 함수
+// 간단한 메모리 캐시
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+
+function getCacheKey(method: string, url: string, data?: any): string {
+  return `${method}:${url}:${JSON.stringify(data || {})}`;
+}
+
+// API 래퍼 함수 (재시도 로직 + 캐싱 포함)
 async function apiCall<T>(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string,
-  data?: any
+  data?: any,
+  retries = 2,
+  useCache = method === 'get' // GET 요청만 캐싱
 ): Promise<T> {
-  try {
-    const response = await apiClient({ method, url, data });
-    // API 응답이 { data: {...}, success: true } 구조이므로 response.data.data를 반환
-    return response.data.data || response.data;
-  } catch (error: any) {
-    console.error(`❌ API Error: ${method.toUpperCase()} ${url}`, {
-      status: error.response?.status,
+  const cacheKey = getCacheKey(method, url, data);
+
+  // 캐시 확인 (GET 요청만)
+  if (useCache && cache.has(cacheKey)) {
+    const cached = cache.get(cacheKey)!;
+    if (Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('📦 Cache hit:', cacheKey);
+      return cached.data;
+    } else {
+      cache.delete(cacheKey);
+    }
+  }
+
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await apiClient({ method, url, data });
+      // API 응답이 { data: {...}, success: true } 구조이므로 response.data.data를 반환
+      const result = response.data.data || response.data;
+
+      // 캐시 저장 (GET 요청만)
+      if (useCache) {
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+      }
+
+      return result;
+    } catch (error: any) {
+      lastError = error;
+
+      // 재시도 불가능한 에러는 즉시 throw
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 404) {
+        throw error;
+      }
+
+      // 마지막 시도가 아니면 재시도
+      if (attempt < retries) {
+        console.log(`🔄 Retrying... (${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // 지수 백오프
+        continue;
+      }
+
+      // 모든 재시도 실패
+      console.error(`❌ API Error after ${retries} retries: ${method.toUpperCase()} ${url}`, {
+        status: error.response?.status,
       message: error.response?.data?.message || error.message,
     });
     throw error;
