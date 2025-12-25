@@ -43,10 +43,12 @@ export interface PromptResponse {
   id: number;
   modelId: number;
   title?: string;
-  promptText: string;
+  description?: string;
+  prompt: string;
   negativePrompt?: string;
+  displayOrder?: number;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface TagResponse {

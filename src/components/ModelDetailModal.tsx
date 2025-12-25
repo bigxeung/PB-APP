@@ -455,7 +455,24 @@ export default function ModelDetailModal({
                     <Text style={styles.sectionTitle}>Example Prompts</Text>
                     {model.prompts.map((prompt) => (
                       <View key={prompt.id} style={styles.promptCard}>
-                        <Text style={styles.promptText}>{prompt.promptText}</Text>
+                        {prompt.title && (
+                          <Text style={styles.promptTitle}>{prompt.title}</Text>
+                        )}
+                        {prompt.description && (
+                          <Text style={styles.promptDescription}>{prompt.description}</Text>
+                        )}
+                        {prompt.prompt && (
+                          <View style={styles.promptTextContainer}>
+                            <Text style={styles.promptLabel}>Prompt:</Text>
+                            <Text style={styles.promptText}>{prompt.prompt}</Text>
+                          </View>
+                        )}
+                        {prompt.negativePrompt && (
+                          <View style={styles.promptTextContainer}>
+                            <Text style={styles.promptLabel}>Negative:</Text>
+                            <Text style={styles.promptNegativeText}>{prompt.negativePrompt}</Text>
+                          </View>
+                        )}
                       </View>
                     ))}
                   </View>
@@ -804,10 +821,42 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },
+  promptTitle: {
+    fontSize: FontSizes.base,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  promptDescription: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  promptTextContainer: {
+    marginBottom: Spacing.xs,
+  },
+  promptLabel: {
+    fontSize: FontSizes.xs,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
   promptText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textPrimary,
+    lineHeight: 20,
+    backgroundColor: Colors.bgHover,
+    padding: Spacing.xs,
+    borderRadius: Radius.sm,
+  },
+  promptNegativeText: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
     lineHeight: 20,
+    backgroundColor: Colors.bgHover,
+    padding: Spacing.xs,
+    borderRadius: Radius.sm,
   },
   statusBadge: {
     alignSelf: 'flex-start',
