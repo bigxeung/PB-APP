@@ -65,6 +65,15 @@ export default function HomeScreen() {
     loadModels(true);
   }, [tab, selectedTags]);
 
+  // 검색어가 비워질 때 목록 새로고침
+  useEffect(() => {
+    if (searchQuery === '') {
+      setPage(0);
+      setHasMore(true);
+      loadModels(true);
+    }
+  }, [searchQuery]);
+
   useEffect(() => {
     loadTags();
   }, []);
@@ -108,8 +117,12 @@ export default function HomeScreen() {
 
       let response;
 
+      // 검색어가 있는 경우 검색 API 사용
+      if (searchQuery.trim().length > 0) {
+        response = await modelsAPI.searchModels(searchQuery.trim(), currentPage, 20);
+      }
       // 태그가 선택된 경우 필터 API 사용 (popular/recent 정렬 함께 적용)
-      if (selectedTags.length > 0) {
+      else if (selectedTags.length > 0) {
         response = await modelsAPI.filterByTags(selectedTags, currentPage, 20, tab);
       } else {
         // 태그가 없는 경우 기존 로직 (popular/recent에 따라)
@@ -282,7 +295,11 @@ export default function HomeScreen() {
           onSubmitEditing={handleSearch}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity onPress={() => {
+            setSearchQuery('');
+            setPage(0);
+            setHasMore(true);
+          }}>
             <Ionicons name="close-circle" size={20} color="#828282" />
           </TouchableOpacity>
         )}
