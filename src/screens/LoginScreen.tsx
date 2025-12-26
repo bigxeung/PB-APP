@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { signUpWithEmail, signInWithEmail } from '../services/firebaseAuth';
+import { signUpWithEmail, signInWithEmail, checkEmailExists } from '../services/firebaseAuth';
 import {
   API_BASE_URL as ENV_API_BASE_URL,
   GOOGLE_WEB_CLIENT_ID as ENV_GOOGLE_WEB_CLIENT_ID,
@@ -200,6 +200,15 @@ export default function LoginScreen() {
           alert('Passwords do not match');
           return;
         }
+
+        // 이메일 중복 검사
+        console.log('🔍 Checking if email already exists...');
+        const emailExists = await checkEmailExists(trimmedEmail);
+        if (emailExists) {
+          alert('This email is already registered. Please sign in instead.');
+          return;
+        }
+        console.log('✅ Email is available');
       }
 
       console.log('Email trimmed:', `"${trimmedEmail}"`);
@@ -214,10 +223,10 @@ export default function LoginScreen() {
       if (result.success) {
         console.log('✅ Email authentication successful!');
 
-        // Update AuthContext with user data
-        console.log('🔄 Updating user context...');
-        await refreshUser();
-        console.log('✅ User context updated!');
+        // Login with returned tokens
+        console.log('🔄 Logging in with JWT tokens...');
+        await login(result.accessToken!, result.refreshToken!);
+        console.log('✅ Login complete!');
 
         navigation.goBack();
       } else {
