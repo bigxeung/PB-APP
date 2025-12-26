@@ -24,7 +24,7 @@ import EmptyState from '../components/EmptyState';
 import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
 import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
@@ -69,6 +69,16 @@ export default function ProfileScreen() {
       setLoading(false);
     }
   }, [isAuthenticated]);
+
+  // Profile 화면에 포커스될 때마다 데이터 새로고침 (좋아요 반영)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        console.log('🔄 Profile screen focused, refreshing liked models...');
+        loadLikedModels();
+      }
+    }, [isAuthenticated])
+  );
 
   const loadAllData = async () => {
     try {
