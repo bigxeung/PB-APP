@@ -23,6 +23,7 @@ import GenerateModal from '../components/generate/GenerateModal';
 import EmptyState from '../components/EmptyState';
 import GenerationHistoryDetailModal from '../components/profile/GenerationHistoryDetailModal';
 import TrainingHistoryDetailModal from '../components/profile/TrainingHistoryDetailModal';
+import ProfileEditModal from '../components/profile/ProfileEditModal';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -32,7 +33,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TabType = 'models' | 'favorites' | 'generation' | 'training';
 
 export default function ProfileScreen() {
-  const { user, logout, isAuthenticated, testLogin } = useAuth();
+  const { user, logout, isAuthenticated, testLogin, refreshUser } = useAuth();
   const navigation = useNavigation<NavigationProp>();
 
   const [activeTab, setActiveTab] = useState<TabType>('models');
@@ -51,6 +52,7 @@ export default function ProfileScreen() {
   const [selectedGenerationId, setSelectedGenerationId] = useState<number | null>(null);
   const [showTrainingDetail, setShowTrainingDetail] = useState(false);
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
 
   // Memory cleanup for images from all tabs
   const imageUrls = [
@@ -158,6 +160,13 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleProfileUpdate = async (updatedUser: any) => {
+    // AuthContext의 user를 업데이트
+    await refreshUser();
+    // 프로필 데이터도 다시 로드
+    await loadAllData();
+  };
+
   const { isDark } = useTheme();
   const bgColor = isDark ? Colors.bgDark : '#FFFFFF';
   const textColor = isDark ? Colors.textPrimary : '#000';
@@ -180,10 +189,20 @@ export default function ProfileScreen() {
         <Text style={[styles.nickname, { color: textColor }]}>{user?.nickname || 'User'}</Text>
         <Text style={[styles.email, { color: secondaryTextColor }]}>{user?.email}</Text>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-          <Text style={[styles.logoutText, { color: Colors.error }]}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: cardBgColor, borderColor }]}
+            onPress={() => setShowProfileEdit(true)}
+          >
+            <Ionicons name="pencil-outline" size={18} color={Colors.primary} />
+            <Text style={[styles.editText, { color: Colors.primary }]}>Edit Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+            <Text style={[styles.logoutText, { color: Colors.error }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 통계 */}
@@ -506,6 +525,13 @@ export default function ProfileScreen() {
         modelId={selectedModelId}
         onGeneratePress={handleGenerateFromDetail}
       />
+
+      <ProfileEditModal
+        visible={showProfileEdit}
+        onClose={() => setShowProfileEdit(false)}
+        user={user}
+        onUpdate={handleProfileUpdate}
+      />
     </SafeAreaView>
   );
 }
@@ -547,6 +573,23 @@ const styles = StyleSheet.create({
   email: {
     fontSize: FontSizes.sm,
     marginBottom: Spacing.lg,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  editText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
   },
   logoutButton: {
     flexDirection: 'row',
