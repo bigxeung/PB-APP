@@ -154,11 +154,15 @@ export default function HomeScreen() {
 
       setError(errorMessage);
 
-      Alert.alert(
-        'API Error',
-        `${errorMessage}\n\nStatus: ${error.response?.status || 'N/A'}\nURL: ${error.config?.baseURL || 'N/A'}`,
-        [{ text: 'OK' }]
-      );
+      // 500 에러는 백엔드 문제이므로 조용히 처리
+      if (error.response?.status === 500) {
+        console.log('⚠️ Server error (500), continuing with cached/existing data');
+        // Toast만 표시하고 앱은 계속 실행
+        // toast.error('Server is experiencing issues. Please try again later.');
+      } else {
+        // 다른 에러는 사용자에게 알림
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

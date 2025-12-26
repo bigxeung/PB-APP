@@ -33,8 +33,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userData = await authAPI.getCurrentUser();
         setUser(userData);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
+    } catch (error: any) {
+      // Silently handle expired or invalid tokens (401 is expected on app start)
+      if (error?.response?.status !== 401) {
+        console.error('Auth check failed:', error);
+      }
       await AsyncStorage.removeItem('accessToken');
       await AsyncStorage.removeItem('refreshToken');
       clearApiCache(); // Clear stale cache data

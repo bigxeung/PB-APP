@@ -182,13 +182,32 @@ export default function ModelDetailModal({
       Alert.alert('Login Required', 'Please login to like models');
       return;
     }
-    if (!modelId) return;
+    if (!modelId || !model) return;
+
+    // Optimistic Update - 즉시 UI 업데이트
+    const previousLikeState = model.isLiked;
+    const previousLikeCount = model.likeCount;
+
+    setModel({
+      ...model,
+      isLiked: !model.isLiked,
+      likeCount: model.isLiked ? model.likeCount - 1 : model.likeCount + 1,
+    });
 
     try {
       await modelsAPI.toggleLike(modelId);
-      await loadModelDetail();
+      // 성공하면 UI는 이미 업데이트되어 있으므로 추가 작업 불필요
     } catch (error) {
       console.error('Failed to toggle like:', error);
+
+      // 실패하면 원래 상태로 복구
+      setModel({
+        ...model,
+        isLiked: previousLikeState,
+        likeCount: previousLikeCount,
+      });
+
+      toast.error('Failed to like model');
     }
   };
 

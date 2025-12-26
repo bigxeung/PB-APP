@@ -28,11 +28,12 @@ const API_BASE_URL = ENV_API_BASE_URL || 'https://d3ka730j70ocy8.cloudfront.net'
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
   const [loginMode, setLoginMode] = React.useState<'google' | 'email'>('google');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [isSignUp, setIsSignUp] = React.useState(false);
 
   // Google OAuth URL 생성 함수 (iOS Client ID + custom scheme)
@@ -164,21 +165,60 @@ export default function LoginScreen() {
   };
 
   const handleEmailAuth = async () => {
+    console.log('🔵 handleEmailAuth called!');
+    console.log('Email raw:', `"${email}"`);
+    console.log('Password:', password ? '***' : 'empty');
+    console.log('isSignUp:', isSignUp);
+
     try {
-      if (!email || !password) {
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+
+      if (!trimmedEmail || !trimmedPassword) {
+        console.log('❌ Email or password missing');
         alert('Please enter both email and password');
         return;
       }
+
+      // 이메일 형식 검증
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+
+      // 회원가입 시 추가 검증
+      if (isSignUp) {
+        // 비밀번호 길이 검증
+        if (trimmedPassword.length < 6) {
+          alert('Password must be at least 6 characters long');
+          return;
+        }
+
+        // 비밀번호 확인 검증
+        if (trimmedPassword !== confirmPassword.trim()) {
+          alert('Passwords do not match');
+          return;
+        }
+      }
+
+      console.log('Email trimmed:', `"${trimmedEmail}"`);
 
       setIsLoading(true);
       console.log(`🚀 Starting email ${isSignUp ? 'sign up' : 'login'}...`);
 
       const result = isSignUp
-        ? await signUpWithEmail(email, password)
-        : await signInWithEmail(email, password);
+        ? await signUpWithEmail(trimmedEmail, trimmedPassword)
+        : await signInWithEmail(trimmedEmail, trimmedPassword);
 
       if (result.success) {
         console.log('✅ Email authentication successful!');
+
+        // Update AuthContext with user data
+        console.log('🔄 Updating user context...');
+        await refreshUser();
+        console.log('✅ User context updated!');
+
         navigation.goBack();
       } else {
         console.error('❌ Email authentication failed:', result.error);
@@ -254,9 +294,23 @@ export default function LoginScreen() {
                 secureTextEntry
                 editable={!isLoading}
               />
+              {isSignUp && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  placeholderTextColor="#828282"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              )}
               <TouchableOpacity
                 style={styles.switchModeButton}
-                onPress={() => setIsSignUp(!isSignUp)}
+                onPress={() => {
+                  setIsSignUp(!isSignUp);
+                  setConfirmPassword('');
+                }}
                 disabled={isLoading}
               >
                 <Text style={styles.switchModeText}>
