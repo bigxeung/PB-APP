@@ -213,6 +213,12 @@ export const modelsAPI = {
 export const userAPI = {
   getMyProfile: () =>
     apiCall<UserResponse>('get', '/api/users/me'),
+
+  updateProfile: (data: Partial<{
+    nickname: string;
+    profileImageUrl: string;
+  }>) =>
+    apiCall<UserResponse>('put', '/api/users/me', data),
 };
 
 // Generate API
