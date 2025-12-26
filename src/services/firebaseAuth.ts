@@ -23,19 +23,27 @@ import { apiClient } from './api';
  */
 export const signUpWithEmail = async (email: string, password: string) => {
   try {
+    console.log('🔵 Step 1: Creating Firebase user with email:', email);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('✅ Step 1 Success: Firebase user created:', user.uid);
 
     // Get Firebase ID Token
+    console.log('🔵 Step 2: Getting Firebase ID token...');
     const idToken = await user.getIdToken();
+    console.log('✅ Step 2 Success: Firebase ID token obtained');
 
     // Send to backend to get JWT tokens
+    console.log('🔵 Step 3: Sending to backend /api/auth/firebase...');
     const response = await apiClient.post('/api/auth/firebase', { idToken });
+    console.log('✅ Step 3 Success: Backend response received:', response.data);
 
     if (response.data.success) {
+      console.log('🔵 Step 4: Saving JWT tokens...');
       // Save JWT tokens
       await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
       await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
+      console.log('✅ Step 4 Success: Tokens saved');
 
       return {
         success: true,
@@ -44,9 +52,32 @@ export const signUpWithEmail = async (email: string, password: string) => {
       };
     }
 
-    return { success: false, error: response.data.error };
+    console.log('❌ Backend returned success: false');
+    return { success: false, error: response.data.error || response.data.message };
   } catch (error: any) {
-    console.error('Sign up error:', error);
+    console.error('❌ Sign up error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    // Backend API error handling (Axios errors)
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || error.response.data?.error;
+
+      if (status === 409) {
+        return { success: false, error: 'This email is already registered with another method' };
+      } else if (status === 400) {
+        return { success: false, error: message || 'Invalid request' };
+      } else if (status === 500) {
+        return { success: false, error: 'Server error. Please try again later.' };
+      }
+
+      return { success: false, error: message || 'Sign up failed' };
+    }
 
     // Firebase error handling
     if (error.code === 'auth/email-already-in-use') {
@@ -57,7 +88,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
       return { success: false, error: 'Invalid email format' };
     }
 
-    return { success: false, error: 'Sign up failed' };
+    return { success: false, error: error.message || 'Sign up failed' };
   }
 };
 
@@ -66,19 +97,27 @@ export const signUpWithEmail = async (email: string, password: string) => {
  */
 export const signInWithEmail = async (email: string, password: string) => {
   try {
+    console.log('🔵 Step 1: Signing in with Firebase email:', email);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('✅ Step 1 Success: Firebase sign in successful:', user.uid);
 
     // Get Firebase ID Token
+    console.log('🔵 Step 2: Getting Firebase ID token...');
     const idToken = await user.getIdToken();
+    console.log('✅ Step 2 Success: Firebase ID token obtained');
 
     // Send to backend to get JWT tokens
+    console.log('🔵 Step 3: Sending to backend /api/auth/firebase...');
     const response = await apiClient.post('/api/auth/firebase', { idToken });
+    console.log('✅ Step 3 Success: Backend response received:', response.data);
 
     if (response.data.success) {
+      console.log('🔵 Step 4: Saving JWT tokens...');
       // Save JWT tokens
       await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
       await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
+      console.log('✅ Step 4 Success: Tokens saved');
 
       return {
         success: true,
@@ -87,12 +126,35 @@ export const signInWithEmail = async (email: string, password: string) => {
       };
     }
 
-    return { success: false, error: response.data.error };
+    console.log('❌ Backend returned success: false');
+    return { success: false, error: response.data.error || response.data.message };
   } catch (error: any) {
-    console.error('Sign in error:', error);
+    console.error('❌ Sign in error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    // Backend API error handling (Axios errors)
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || error.response.data?.error;
+
+      if (status === 400) {
+        return { success: false, error: message || 'Invalid request' };
+      } else if (status === 404) {
+        return { success: false, error: 'User not found' };
+      } else if (status === 500) {
+        return { success: false, error: 'Server error. Please try again later.' };
+      }
+
+      return { success: false, error: message || 'Sign in failed' };
+    }
 
     // Firebase error handling
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       return { success: false, error: 'Invalid email or password' };
     } else if (error.code === 'auth/invalid-email') {
       return { success: false, error: 'Invalid email format' };
@@ -100,7 +162,7 @@ export const signInWithEmail = async (email: string, password: string) => {
       return { success: false, error: 'Account has been disabled' };
     }
 
-    return { success: false, error: 'Sign in failed' };
+    return { success: false, error: error.message || 'Sign in failed' };
   }
 };
 

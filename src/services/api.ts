@@ -189,8 +189,10 @@ export const modelsAPI = {
 
   filterByTags: (tags: string[], page: number = 0, size: number = 20, sortBy?: 'popular' | 'recent') => {
     const tagParams = tags.map(tag => `tags=${encodeURIComponent(tag)}`).join('&');
-    const sortParam = sortBy ? `&sort=${sortBy}` : '';
-    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}${sortParam}`);
+    // TODO: 백엔드 API 명세 확인 필요 - sort 파라미터가 500 에러 유발
+    // const sortParam = sortBy ? `&sort=${sortBy}` : '';
+    // 임시로 sort 파라미터 제거
+    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}`);
   },
 
   searchModels: (query: string, page: number = 0, size: number = 20) =>
@@ -293,10 +295,10 @@ export const communityAPI = {
     apiCall('post', `/api/models/${modelId}/favorite`, {}),
 
   getLikedModels: (page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<LoraModel>>('get', `/api/models/likes?page=${page}&size=${size}`),
+    apiCall<PageResponse<LoraModel>>('get', `/api/models/likes?page=${page}&size=${size}&sort=createdAt,DESC`),
 
   getComments: (modelId: number, page: number = 0, size: number = 20) =>
-    apiCall<PageResponse<CommentResponse>>('get', `/api/models/${modelId}/comments?page=${page}&size=${size}`),
+    apiCall<PageResponse<CommentResponse>>('get', `/api/models/${modelId}/comments?page=${page}&size=${size}&sort=createdAt,DESC`),
 
   createComment: (modelId: number, content: string) =>
     apiCall<CommentResponse>('post', `/api/models/${modelId}/comments`, { content }),

@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius, FontSizes, Shadows } from '../../constants/theme';
-import { modelsAPI, userAPI, communityAPI } from '../services/api';
+import { modelsAPI, userAPI, communityAPI, clearApiCache } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import type { ModelDetailResponse, CommentResponse } from '../types';
@@ -184,6 +184,12 @@ export default function ModelDetailModal({
     }
     if (!modelId || !model) return;
 
+    console.log('💖 Like button pressed:', {
+      modelId,
+      currentState: model.isLiked,
+      willChangeTo: !model.isLiked,
+    });
+
     // Optimistic Update - 즉시 UI 업데이트
     const previousLikeState = model.isLiked;
     const previousLikeCount = model.likeCount;
@@ -195,10 +201,20 @@ export default function ModelDetailModal({
     });
 
     try {
-      await modelsAPI.toggleLike(modelId);
-      // 성공하면 UI는 이미 업데이트되어 있으므로 추가 작업 불필요
-    } catch (error) {
-      console.error('Failed to toggle like:', error);
+      console.log('📡 Calling toggleLike API...');
+      const response = await modelsAPI.toggleLike(modelId);
+      console.log('✅ toggleLike API success:', response);
+
+      // 좋아요 목록 캐시 무효화 (Profile에서 최신 데이터 보이도록)
+      console.log('🗑️ Clearing liked models cache...');
+      clearApiCache();
+    } catch (error: any) {
+      console.error('❌ Failed to toggle like:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
 
       // 실패하면 원래 상태로 복구
       setModel({
@@ -240,19 +256,45 @@ export default function ModelDetailModal({
   };
 
   const handleSubmitComment = async () => {
+    console.log('💬 Comment submit pressed', {
+      isAuthenticated,
+      hasComment: !!newComment.trim(),
+      modelId,
+    });
+
     if (!isAuthenticated) {
       Alert.alert('Login Required', 'Please login to comment');
       return;
     }
-    if (!newComment.trim() || !modelId) return;
+    if (!newComment.trim() || !modelId) {
+      console.log('❌ Comment empty or no modelId');
+      return;
+    }
 
     try {
+      console.log('📡 Calling createComment API...', {
+        modelId,
+        content: newComment.trim(),
+      });
       const response = await communityAPI.createComment(modelId, newComment.trim());
+      console.log('✅ createComment API success:', response);
+
+      // 댓글 목록에 추가
       setComments([response, ...comments]);
       setNewComment('');
+
+      // 댓글 목록 캐시 무효화
+      console.log('🗑️ Clearing comments cache...');
+      clearApiCache();
+
       toast.success('Comment posted');
-    } catch (error) {
-      console.error('Failed to post comment:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to post comment:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       toast.error('Failed to post comment');
     }
   };
