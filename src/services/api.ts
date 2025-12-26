@@ -189,10 +189,13 @@ export const modelsAPI = {
 
   filterByTags: (tags: string[], page: number = 0, size: number = 20, sortBy?: 'popular' | 'recent') => {
     const tagParams = tags.map(tag => `tags=${encodeURIComponent(tag)}`).join('&');
-    // TODO: 백엔드 API 명세 확인 필요 - sort 파라미터가 500 에러 유발
-    // const sortParam = sortBy ? `&sort=${sortBy}` : '';
-    // 임시로 sort 파라미터 제거
-    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}`);
+    // API 명세에 따라 sort 형식: "property,direction"
+    const sortParam = sortBy === 'popular'
+      ? '&sort=likeCount,DESC'
+      : sortBy === 'recent'
+        ? '&sort=createdAt,DESC'
+        : '&sort=createdAt,DESC'; // 기본값
+    return apiCall<PageResponse<LoraModel>>('get', `/api/models/filter?${tagParams}&page=${page}&size=${size}${sortParam}`);
   },
 
   searchModels: (query: string, page: number = 0, size: number = 20) =>
