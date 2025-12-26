@@ -1,0 +1,475 @@
+ 📱 Firebase 이메일/비밀번호 인증 연동 가이드 (React Native)
+
+  🔧 1. Firebase 프로젝트 설정
+
+  Firebase Console: https://console.firebase.google.com/project/my-lora-auth
+
+  1. 프로젝트 ID: my-lora-auth
+  2. 인증 방식: Email/Password 활성화됨 ✅
+  3. 앱 등록:
+    - Firebase Console → 프로젝트 설정 → 일반 → 앱 추가
+    - Android: google-services.json 다운로드 → android/app/ 폴더에 저장
+    - iOS: GoogleService-Info.plist 다운로드 → Xcode에서 프로젝트에 추가
+
+  ---
+  📦 2. Firebase SDK 설치
+
+  # React Native Firebase 설치
+  npm install @react-native-firebase/app @react-native-firebase/auth
+
+  # iOS 의존성 설치
+  cd ios && pod install && cd ..
+
+  Android 설정 (android/build.gradle):
+  buildscript {
+      dependencies {
+          classpath 'com.google.gms:google-services:4.4.0'
+      }
+  }
+
+  Android 설정 (android/app/build.gradle):
+  apply plugin: 'com.google.gms.google-services'
+
+  iOS 설정: Xcode에서 GoogleService-Info.plist 파일이 프로젝트에 포함되었는지 확인
+
+  ---
+  🔐 3. 인증 플로우
+
+  ✅ 회원가입 (Sign Up)
+
+  // src/services/authService.ts
+  import auth from '@react-native-firebase/auth';
+  import axios from 'axios';
+  import AsyncStorage from '@react-native-async-storage/async-storage';
+
+  const API_BASE_URL = 'https://lora.blueming.me';
+
+  interface AuthResponse {
+    success: boolean;
+    data: {
+      accessToken: string;
+      refreshToken: string;
+      user: {
+        id: number;
+        email: string;
+        nickname: string;
+        profileImageUrl: string | null;
+        role: string;
+      };
+    };
+    error: any;
+  }
+
+  export const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      // 1. Firebase 회원가입
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+
+      // 2. Firebase ID Token 발급
+      const idToken = await userCredential.user.getIdToken();
+
+      // 3. 백엔드로 ID Token 전송하여 JWT 발급
+      const response = await axios.post<AuthResponse>(
+        `${API_BASE_URL}/api/auth/firebase/register`,
+        { idToken }
+      );
+
+      if (response.data.success) {
+        // 4. JWT 토큰 저장
+        await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
+        await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
+
+        return {
+          success: true,
+          user: response.data.data.user
+        };
+      }
+
+      return { success: false, error: response.data.error };
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+
+      // Firebase 에러 메시지 처리
+      if (error.code === 'auth/email-already-in-use') {
+        return { success: false, error: '이미 사용 중인 이메일입니다.' };
+      } else if (error.code === 'auth/weak-password') {
+        return { success: false, error: '비밀번호는 최소 6자 이상이어야 합니다.' };
+      } else if (error.code === 'auth/invalid-email') {
+        return { success: false, error: '유효하지 않은 이메일 형식입니다.' };
+      }
+
+      return { success: false, error: '회원가입에 실패했습니다.' };
+    }
+  };
+
+  ---
+  ✅ 로그인 (Sign In)
+
+  export const signInWithEmail = async (email: string, password: string) => {
+    try {
+      // 1. Firebase 로그인
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+
+      // 2. Firebase ID Token 발급
+      const idToken = await userCredential.user.getIdToken();
+
+      // 3. 백엔드로 ID Token 전송하여 JWT 발급
+      const response = await axios.post<AuthResponse>(
+        `${API_BASE_URL}/api/auth/firebase/login`,
+        { idToken }
+      );
+
+      if (response.data.success) {
+        // 4. JWT 토큰 저장
+        await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
+        await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
+
+        return {
+          success: true,
+          user: response.data.data.user
+        };
+      }
+
+      return { success: false, error: response.data.error };
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+
+      // Firebase 에러 메시지 처리
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+      } else if (error.code === 'auth/invalid-email') {
+        return { success: false, error: '유효하지 않은 이메일 형식입니다.' };
+      } else if (error.code === 'auth/user-disabled') {
+        return { success: false, error: '비활성화된 계정입니다.' };
+      }
+
+      return { success: false, error: '로그인에 실패했습니다.' };
+    }
+  };
+
+  ---
+  ✅ 회원가입/로그인 화면 예시
+
+  // src/screens/RegisterScreen.tsx
+  import React, { useState } from 'react';
+  import { View, TextInput, Button, Text, Alert } from 'react-native';
+  import { signUpWithEmail } from '../services/authService';
+
+  const RegisterScreen = ({ navigation }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSignUp = async () => {
+      if (!email || !password) {
+        Alert.alert('오류', '이메일과 비밀번호를 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+      const result = await signUpWithEmail(email, password);
+      setLoading(false);
+
+      if (result.success) {
+        Alert.alert('성공', '회원가입이 완료되었습니다!');
+        navigation.navigate('Main');
+      } else {
+        Alert.alert('오류', result.error);
+      }
+    };
+
+    return (
+      <View style={{ padding: 20 }}>
+        <Text style={{ fontSize: 24, marginBottom: 20 }}>회원가입</Text>
+
+        <TextInput
+          placeholder="이메일"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        />
+
+        <TextInput
+          placeholder="비밀번호 (6자 이상)"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
+        />
+
+        <Button title={loading ? '처리 중...' : '회원가입'} onPress={handleSignUp} disabled={loading} />
+
+        <Button title="로그인 화면으로" onPress={() => navigation.navigate('Login')} />
+      </View>
+    );
+  };
+
+  export default RegisterScreen;
+
+  // src/screens/LoginScreen.tsx
+  import React, { useState } from 'react';
+  import { View, TextInput, Button, Text, Alert } from 'react-native';
+  import { signInWithEmail } from '../services/authService';
+
+  const LoginScreen = ({ navigation }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSignIn = async () => {
+      if (!email || !password) {
+        Alert.alert('오류', '이메일과 비밀번호를 입력해주세요.');
+        return;
+      }
+
+      setLoading(true);
+      const result = await signInWithEmail(email, password);
+      setLoading(false);
+
+      if (result.success) {
+        navigation.navigate('Main');
+      } else {
+        Alert.alert('오류', result.error);
+      }
+    };
+
+    return (
+      <View style={{ padding: 20 }}>
+        <Text style={{ fontSize: 24, marginBottom: 20 }}>로그인</Text>
+
+        <TextInput
+          placeholder="이메일"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        />
+
+        <TextInput
+          placeholder="비밀번호"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
+        />
+
+        <Button title={loading ? '처리 중...' : '로그인'} onPress={handleSignIn} disabled={loading} />
+
+        <Button title="회원가입" onPress={() => navigation.navigate('Register')} />
+      </View>
+    );
+  };
+
+  export default LoginScreen;
+
+  ---
+  🔑 4. JWT 토큰 사용 (Axios Interceptor)
+
+  // src/api/axiosInstance.ts
+  import axios from 'axios';
+  import AsyncStorage from '@react-native-async-storage/async-storage';
+
+  const API_BASE_URL = 'https://lora.blueming.me';
+
+  const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 10000,
+  });
+
+  // 요청 인터셉터: 모든 요청에 JWT 토큰 추가
+  axiosInstance.interceptors.request.use(
+    async (config) => {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (accessToken) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // 응답 인터셉터: 401 에러 시 토큰 갱신
+  axiosInstance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+
+      // 401 Unauthorized && 재시도 아직 안 함
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          // Refresh Token으로 새 Access Token 발급
+          const refreshToken = await AsyncStorage.getItem('refreshToken');
+
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+            refreshToken
+          });
+
+          if (response.data.success) {
+            const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+
+            // 새 토큰 저장
+            await AsyncStorage.setItem('accessToken', accessToken);
+            await AsyncStorage.setItem('refreshToken', newRefreshToken);
+
+            // 원래 요청 재시도
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            return axiosInstance(originalRequest);
+          }
+        } catch (refreshError) {
+          // Refresh 실패 → 로그아웃 처리
+          await AsyncStorage.removeItem('accessToken');
+          await AsyncStorage.removeItem('refreshToken');
+
+          // 로그인 화면으로 이동 (Navigation은 별도 처리 필요)
+          console.error('Token refresh failed. Please login again.');
+          return Promise.reject(refreshError);
+        }
+      }
+
+      return Promise.reject(error);
+    }
+  );
+
+  export default axiosInstance;
+
+  ---
+  🔄 5. API 호출 예시
+
+  // src/services/modelService.ts
+  import axiosInstance from '../api/axiosInstance';
+
+  // 모델 목록 조회
+  export const getModels = async () => {
+    try {
+      const response = await axiosInstance.get('/api/models');
+      return response.data;
+    } catch (error) {
+      console.error('Get models error:', error);
+      throw error;
+    }
+  };
+
+  // 모델 생성
+  export const createModel = async (modelData: any) => {
+    try {
+      const response = await axiosInstance.post('/api/models', modelData);
+      return response.data;
+    } catch (error) {
+      console.error('Create model error:', error);
+      throw error;
+    }
+  };
+
+  ---
+  🚪 6. 로그아웃
+
+  // src/services/authService.ts
+  import auth from '@react-native-firebase/auth';
+  import AsyncStorage from '@react-native-async-storage/async-storage';
+  import axiosInstance from '../api/axiosInstance';
+
+  export const logout = async () => {
+    try {
+      // 1. 백엔드 로그아웃 (Refresh Token 무효화)
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await axiosInstance.post('/api/auth/logout', { refreshToken });
+      }
+
+      // 2. Firebase 로그아웃
+      await auth().signOut();
+
+      // 3. 로컬 토큰 삭제
+      await AsyncStorage.removeItem('accessToken');
+      await AsyncStorage.removeItem('refreshToken');
+
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { success: false, error };
+    }
+  };
+
+  ---
+  📱 7. 자동 로그인 체크
+
+  // App.tsx 또는 AuthProvider
+  import React, { useEffect, useState } from 'react';
+  import AsyncStorage from '@react-native-async-storage/async-storage';
+  import auth from '@react-native-firebase/auth';
+
+  const App = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      checkLoginStatus();
+    }, []);
+
+    const checkLoginStatus = async () => {
+      try {
+        const accessToken = await AsyncStorage.getItem('accessToken');
+        const firebaseUser = auth().currentUser;
+
+        if (accessToken && firebaseUser) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error('Check login status error:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isLoading) {
+      return <LoadingScreen />;
+    }
+
+    return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
+  };
+
+  ---
+  🌐 8. 백엔드 API 엔드포인트
+
+  Base URL: https://lora.blueming.me
+
+  | 메서드 | 엔드포인트                  | 설명                |
+  |--------|-----------------------------|---------------------|
+  | POST   | /api/auth/firebase/register | Firebase 회원가입   |
+  | POST   | /api/auth/firebase/login    | Firebase 로그인     |
+  | POST   | /api/auth/refresh           | Access Token 갱신   |
+  | POST   | /api/auth/logout            | 로그아웃            |
+  | GET    | /api/users/me               | 현재 유저 정보 조회 |
+  | PATCH  | /api/users/me               | 프로필 수정         |
+
+  Swagger 문서: https://lora.blueming.me/swagger-ui.html
+
+  ---
+  ⚠️ 9. 주요 Firebase 에러 코드
+
+  | 코드                      | 설명                      |
+  |---------------------------|---------------------------|
+  | auth/email-already-in-use | 이미 사용 중인 이메일     |
+  | auth/weak-password        | 비밀번호가 6자 미만       |
+  | auth/invalid-email        | 유효하지 않은 이메일 형식 |
+  | auth/user-not-found       | 등록되지 않은 사용자      |
+  | auth/wrong-password       | 잘못된 비밀번호           |
+  | auth/user-disabled        | 비활성화된 계정           |
+
+  ---
+  📞 10. 문의사항
+
+  - Swagger 문서: https://lora.blueming.me/swagger-ui.html
+  - Firebase Console: https://console.firebase.google.com/project/my-lora-auth
+  - 백엔드 개발자: (연락처)
+
+  ---
+  이 가이드를 React Native 앱 개발자에게 전달하시면 됩니다! 🎉
