@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useContext, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI, clearApiCache } from '../services/api';
 import { UserResponse } from '../types';
+import { firestoreSyncAPI, firestoreUserAPI } from '../services/firestoreService';
+import { auth } from '../config/firebase';
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -49,6 +51,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const userData = await authAPI.getCurrentUser();
       setUser(userData);
+
+      // Sync user data to Firestore
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        await firestoreSyncAPI.syncUserData(firebaseUser.uid, userData);
+      }
     } catch (error) {
       console.error('Failed to get user data:', error);
       throw error;
@@ -85,6 +93,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const userData = await authAPI.getCurrentUser();
       setUser(userData);
+
+      // Sync updated user data to Firestore
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        await firestoreSyncAPI.syncUserData(firebaseUser.uid, userData);
+      }
     } catch (error) {
       console.error('Failed to refresh user:', error);
       throw error;

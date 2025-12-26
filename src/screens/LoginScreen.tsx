@@ -1,11 +1,14 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AuthSession from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { signUpWithEmail, signInWithEmail } from '../services/firebaseAuth';
 import {
   API_BASE_URL as ENV_API_BASE_URL,
   GOOGLE_WEB_CLIENT_ID as ENV_GOOGLE_WEB_CLIENT_ID,
@@ -27,6 +30,10 @@ export default function LoginScreen() {
   const navigation = useNavigation();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [loginMode, setLoginMode] = React.useState<'google' | 'email'>('google');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isSignUp, setIsSignUp] = React.useState(false);
 
   // Google OAuth URL 생성 함수 (iOS Client ID + custom scheme)
   const getGoogleAuthUrl = () => {
@@ -78,16 +85,27 @@ export default function LoginScreen() {
       }
 
       const tokens = await tokenResponse.json();
-      const idToken = tokens.id_token;
+      const googleIdToken = tokens.id_token;
       console.log('✅ ID token received from Google');
 
-      // Step 2: 백엔드로 ID token 전송하여 JWT 발급
-      const response = await fetch(`${API_BASE_URL}/api/auth/google/token`, {
+      // Step 2: Firebase로 Google 자격증명 로그인
+      console.log('🔄 Signing in to Firebase with Google credential...');
+      const credential = GoogleAuthProvider.credential(googleIdToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      const firebaseUser = userCredential.user;
+      console.log('✅ Firebase sign-in successful:', firebaseUser.uid);
+
+      // Step 3: Firebase ID token 가져오기
+      const firebaseIdToken = await firebaseUser.getIdToken();
+      console.log('✅ Firebase ID token received');
+
+      // Step 4: 백엔드로 Firebase ID token 전송하여 JWT 발급
+      const response = await fetch(`${API_BASE_URL}/api/auth/firebase`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ idToken: firebaseIdToken }),
       });
 
       if (!response.ok) {
@@ -145,60 +163,149 @@ export default function LoginScreen() {
     }
   };
 
+  const handleEmailAuth = async () => {
+    try {
+      if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+      }
+
+      setIsLoading(true);
+      console.log(`🚀 Starting email ${isSignUp ? 'sign up' : 'login'}...`);
+
+      const result = isSignUp
+        ? await signUpWithEmail(email, password)
+        : await signInWithEmail(email, password);
+
+      if (result.success) {
+        console.log('✅ Email authentication successful!');
+        navigation.goBack();
+      } else {
+        console.error('❌ Email authentication failed:', result.error);
+        alert(result.error || 'Authentication failed');
+      }
+    } catch (error) {
+      console.error('❌ Email authentication error:', error);
+      alert('Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Blueming AI</Text>
-        <Text style={styles.subtitle}>AI Image Generation Platform</Text>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="images" size={100} color="#3B82F6" />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Blueming AI</Text>
+          <Text style={styles.subtitle}>AI Image Generation Platform</Text>
         </View>
-        <Text style={styles.description}>
-          Create amazing AI art with{'\n'}
-          custom LoRA models
-        </Text>
 
-        <View style={styles.features}>
-          <View style={styles.featureItem}>
-            <Ionicons name="brush" size={24} color="#3B82F6" />
-            <Text style={styles.featureText}>Train Models</Text>
+        <View style={styles.content}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="images" size={80} color="#3B82F6" />
           </View>
-          <View style={styles.featureItem}>
-            <Ionicons name="image" size={24} color="#3B82F6" />
-            <Text style={styles.featureText}>Generate Art</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Ionicons name="people" size={24} color="#3B82F6" />
-            <Text style={styles.featureText}>Share & Discover</Text>
-          </View>
-        </View>
-      </View>
+          <Text style={styles.description}>
+            Create amazing AI art with{'\n'}
+            custom LoRA models
+          </Text>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
-          onPress={handleGoogleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="logo-google" size={24} color="#fff" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </>
+          {/* Login Mode Tabs */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, loginMode === 'google' && styles.tabActive]}
+              onPress={() => setLoginMode('google')}
+            >
+              <Text style={[styles.tabText, loginMode === 'google' && styles.tabTextActive]}>
+                Google
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, loginMode === 'email' && styles.tabActive]}
+              onPress={() => setLoginMode('email')}
+            >
+              <Text style={[styles.tabText, loginMode === 'email' && styles.tabTextActive]}>
+                Email
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Email Login Form */}
+          {loginMode === 'email' && (
+            <View style={styles.emailForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#828282"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!isLoading}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#828282"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!isLoading}
+              />
+              <TouchableOpacity
+                style={styles.switchModeButton}
+                onPress={() => setIsSignUp(!isSignUp)}
+                disabled={isLoading}
+              >
+                <Text style={styles.switchModeText}>
+                  {isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
-        </TouchableOpacity>
+        </View>
 
-        <Text style={styles.termsText}>
-          By continuing, you agree to our{'\n'}
-          Terms of Service and Privacy Policy
-        </Text>
-      </View>
-    </View>
+        <View style={styles.footer}>
+          {loginMode === 'google' ? (
+            <TouchableOpacity
+              style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={24} color="#fff" />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.emailButton, isLoading && styles.googleButtonDisabled]}
+              onPress={handleEmailAuth}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.googleButtonText}>
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <Text style={styles.termsText}>
+            By continuing, you agree to our{'\n'}
+            Terms of Service and Privacy Policy
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -206,6 +313,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1A1A1D',
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 20,
   },
   header: {
@@ -235,20 +345,54 @@ const styles = StyleSheet.create({
     color: '#BDBDBD',
     textAlign: 'center',
     lineHeight: 28,
-    marginBottom: 40,
+    marginBottom: 24,
   },
-  features: {
+  tabContainer: {
     flexDirection: 'row',
-    gap: 24,
-    marginTop: 20,
+    backgroundColor: '#28282B',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
   },
-  featureItem: {
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
   },
-  featureText: {
-    fontSize: 12,
+  tabActive: {
+    backgroundColor: '#3B82F6',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#BDBDBD',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  emailForm: {
+    width: '100%',
+    gap: 16,
+  },
+  input: {
+    backgroundColor: '#28282B',
+    borderWidth: 1,
+    borderColor: '#4A4A4F',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#fff',
+  },
+  switchModeButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  switchModeText: {
+    fontSize: 14,
+    color: '#3B82F6',
   },
   footer: {
     marginBottom: 40,
@@ -263,6 +407,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     gap: 12,
+  },
+  emailButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3B82F6',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 16,
   },
   googleButtonDisabled: {
     opacity: 0.6,
