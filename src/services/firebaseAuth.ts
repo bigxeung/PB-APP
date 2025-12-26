@@ -13,10 +13,26 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
   AuthCredential,
+  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from './api';
+
+/**
+ * Check if email already exists
+ */
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+    return signInMethods.length > 0;
+  } catch (error: any) {
+    console.error('Error checking email:', error);
+    // If there's an error, return false to allow the sign-up attempt
+    // (Firebase will handle the actual validation)
+    return false;
+  }
+};
 
 /**
  * Sign up with email and password
@@ -39,16 +55,14 @@ export const signUpWithEmail = async (email: string, password: string) => {
     console.log('✅ Step 3 Success: Backend response received:', response.data);
 
     if (response.data.success) {
-      console.log('🔵 Step 4: Saving JWT tokens...');
-      // Save JWT tokens
-      await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
-      await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
-      console.log('✅ Step 4 Success: Tokens saved');
-
+      console.log('🔵 Step 4: Returning tokens and user data...');
+      // Return tokens and user data (LoginScreen will handle saving via login())
       return {
         success: true,
         user: response.data.data.user,
         firebaseUser: user,
+        accessToken: response.data.data.accessToken,
+        refreshToken: response.data.data.refreshToken,
       };
     }
 
@@ -113,16 +127,14 @@ export const signInWithEmail = async (email: string, password: string) => {
     console.log('✅ Step 3 Success: Backend response received:', response.data);
 
     if (response.data.success) {
-      console.log('🔵 Step 4: Saving JWT tokens...');
-      // Save JWT tokens
-      await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
-      await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
-      console.log('✅ Step 4 Success: Tokens saved');
-
+      console.log('🔵 Step 4: Returning tokens and user data...');
+      // Return tokens and user data (LoginScreen will handle saving via login())
       return {
         success: true,
         user: response.data.data.user,
         firebaseUser: user,
+        accessToken: response.data.data.accessToken,
+        refreshToken: response.data.data.refreshToken,
       };
     }
 
